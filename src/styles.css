@@ -1,0 +1,93 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f4f6f8;
+}
+
+/* Navbar */
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #2c3e50;
+  color: white;
+  padding: 15px 30px;
+}
+
+nav a {
+  color: white;
+  margin: 0 10px;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+nav button {
+  margin-left: 10px;
+  padding: 6px 12px;
+  border: none;
+  background-color: #e74c3c;
+  color: white;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+/* MAIN CENTER CONTAINER */
+.container {
+  max-width: 800px;
+  margin: 40px auto;   /* 🔥 centers horizontally */
+  padding: 20px;
+  text-align: center;  /* 🔥 centers text */
+}
+
+/* Cards */
+.card {
+  background: white;
+  padding: 15px;
+  margin: 15px auto;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  text-align: left; /* keep card content readable */
+}
+
+/* Inputs */
+input, select {
+  padding: 10px;
+  margin: 10px auto;
+  width: 80%;
+  display: block;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+/* Buttons */
+button {
+  padding: 10px 20px;
+  border: none;
+  background-color: #3498db;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+/* Form center */
+.form-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh; /* 🔥 vertical center */
+}
+
+form {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  width: 300px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+/* Status colors */
+.green { color: green; font-weight: bold; }
+.red { color: red; font-weight: bold; }
+.orange { color: orange; font-weight: bold; }
