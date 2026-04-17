@@ -1,66 +1,54 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
-function Header() {
-  const navigate = useNavigate();
-  const location = useLocation();
+const routeLabels = {
+  "/":             "All Patients",
+  "/dashboard":    "Dashboard",
+  "/add":          "Add Patient",
+  "/discharged":   "Discharged",
+  "/reports":      "Reports",
+  "/activity":     "Activity",
+  "/about":        "About",
+  "/contact":      "Contact",
+  "/appointments": "Appointments",
+};
 
-  const logout = () => {
-    localStorage.removeItem("auth");
-    window.dispatchEvent(new Event("storage"));
-    navigate("/login");
-  };
+export default function Header() {
+  const navigate  = useNavigate();
+  const location  = useLocation();
 
-  const linkStyle = (path) =>
-    `cursor-pointer ${location.pathname === path
-      ? "text-blue-500 font-bold"
-      : "hover:text-blue-500"
-    }`;
+  const currentLabel =
+    routeLabels[location.pathname] ||
+    (location.pathname.startsWith("/patient/") ? "Patient Details"   :
+     location.pathname.startsWith("/leave/")   ? "Discharge Patient" : "");
+
+  const now = new Date().toLocaleDateString("en-IN", {
+    weekday: "short", day: "numeric", month: "short", year: "numeric",
+  });
 
   return (
-    <nav className="bg-white dark:bg-gray-900 shadow px-6 py-3 flex justify-between items-center">
-
-      {/* LOGO */}
-      <h2
-        className="font-bold text-lg cursor-pointer"
-        onClick={() => navigate("/")}
-      >
-        🏥 OPD System
-      </h2>
-
-      {/* NAV LINKS */}
-      <div className="flex items-center space-x-5 text-sm">
-        <Link to="/about" className={linkStyle("/about")}>
-          About
-        </Link>
-
-        <Link to="/contact" className={linkStyle("/contact")}>
-          Contact
-        </Link>
-
-        <Link to="/" className={linkStyle("/")}>
-          Home
-        </Link>
-
-        <Link to="/add" className={linkStyle("/add")}>
-          Add Patient
-        </Link>
-
-        <Link to="/discharged" className={linkStyle("/discharged")}>
-          Discharged
-        </Link>
-
-        {/* LOGOUT */}
+    <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-3 flex items-center justify-between shadow-sm shrink-0">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-sm">
         <button
-          onClick={logout}
-          className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
+          onClick={() => navigate("/dashboard")}
+          className="text-indigo-500 dark:text-indigo-400 font-semibold hover:underline"
         >
-          Logout
+          Home
         </button>
-
+        {currentLabel && (
+          <>
+            <span className="text-slate-300 dark:text-slate-600">/</span>
+            <span className="text-slate-700 dark:text-slate-200 font-semibold">{currentLabel}</span>
+          </>
+        )}
       </div>
 
-    </nav>
+      {/* Right side */}
+      <div className="flex items-center gap-3">
+        <span className="hidden md:inline-flex items-center gap-1.5 text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full">
+          📅 {now}
+        </span>
+      </div>
+    </header>
   );
 }
-
-export default Header;
