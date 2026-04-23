@@ -31,7 +31,6 @@ function mapUsers(users) {
     notes:    "Fetched from external clinical registry.",
   }));
 }
-
 export const fetchApiPatients = async () => {
   try {
     // dummyjson returns name, age, gender, bloodGroup, phone — perfect for patients
