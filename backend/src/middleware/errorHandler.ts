@@ -66,3 +66,4 @@ export const errorHandler = (
 
   return sendError(res, message, statusCode, errorCode, details);
 };
+

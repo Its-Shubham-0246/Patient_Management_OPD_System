@@ -1,28 +1,57 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ShieldCheck, Stethoscope, UserCheck, Users, Lock, Phone, ArrowRight } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { ShieldCheck, Stethoscope, UserCheck, Users, ArrowRight, Sparkles, AlertCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Alert } from '../components/ui/Alert';
+import { useAuth } from '../context/AuthContext';
+import { UserRole } from '../types';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const [role, setRole] = useState<'ADMIN' | 'DOCTOR' | 'RECEPTIONIST' | 'PATIENT'>('ADMIN');
+  const location = useLocation();
+  const { login, seedDemoUsers } = useAuth();
+
+  const [role, setRole] = useState<UserRole>('ADMIN');
   const [identifier, setIdentifier] = useState('9876543210');
   const [password, setPassword] = useState('Admin@123');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [seedSuccess, setSeedSuccess] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Demo accounts preset mapping
+  const demoAccounts: Record<UserRole, { phone: string; pass: string; label: string }> = {
+    ADMIN: { phone: '9876543210', pass: 'Admin@123', label: 'Admin (Dr. Owner)' },
+    DOCTOR: { phone: '9876543211', pass: 'Doctor@123', label: 'Doctor (Dr. Sharma)' },
+    RECEPTIONIST: { phone: '9876543212', pass: 'Reception@123', label: 'Receptionist (Sunita V.)' },
+    PATIENT: { phone: '9876543213', pass: 'Patient@123', label: 'Patient (Rahul Mehta)' }
+  };
+
+  const handleSelectRole = (selectedRole: UserRole) => {
+    setRole(selectedRole);
+    setIdentifier(demoAccounts[selectedRole].phone);
+    setPassword(demoAccounts[selectedRole].pass);
+    setError(null);
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
-    // Phase 1 navigation mock with role redirection
-    setTimeout(() => {
-      setIsLoading(false);
-      switch (role) {
+    const result = await login(identifier, password);
+    setIsLoading(false);
+
+    if (result.success && result.user) {
+      const from = (location.state as any)?.from?.pathname;
+      if (from) {
+        navigate(from, { replace: true });
+        return;
+      }
+
+      switch (result.user.role) {
         case 'DOCTOR':
           navigate('/doctor/workspace');
           break;
@@ -37,15 +66,20 @@ export const LoginPage: React.FC = () => {
           navigate('/admin/dashboard');
           break;
       }
-    }, 600);
+    } else {
+      setError(result.error || 'Authentication failed. Please verify credentials.');
+    }
   };
 
-  const roles = [
-    { id: 'ADMIN', label: 'Admin', icon: ShieldCheck },
-    { id: 'DOCTOR', label: 'Doctor', icon: Stethoscope },
-    { id: 'RECEPTIONIST', label: 'Reception', icon: UserCheck },
-    { id: 'PATIENT', label: 'Patient', icon: Users },
-  ] as const;
+  const handleQuickSeed = async () => {
+    setIsSeeding(true);
+    const ok = await seedDemoUsers();
+    setIsSeeding(false);
+    if (ok) {
+      setSeedSuccess(true);
+      setTimeout(() => setSeedSuccess(false), 4000);
+    }
+  };
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center py-6 px-4">
@@ -56,46 +90,62 @@ export const LoginPage: React.FC = () => {
           </div>
           <CardTitle className="text-xl font-bold mt-2">Sign In to Smart OPD</CardTitle>
           <CardDescription className="text-xs">
-            Select your clinical role and enter your authorized credentials
+            Enter your authorized clinical credentials to access your workspace
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-5">
-          {/* Role Selector Tabs */}
+        <CardContent className="space-y-4">
+          {/* Quick Demo Pre-fill Selector */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              Select Role
-            </label>
-            <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 rounded-lg">
-              {roles.map((r) => {
-                const Icon = r.icon;
-                const isSelected = role === r.id;
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                Quick-Fill Demo Role
+              </label>
+              <button
+                type="button"
+                onClick={handleQuickSeed}
+                disabled={isSeeding}
+                className="text-[10px] font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                title="Populate database with default accounts if empty"
+              >
+                <Sparkles className="h-3 w-3" />
+                <span>{isSeeding ? 'Seeding...' : 'Seed Database'}</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-lg">
+              {(['ADMIN', 'DOCTOR', 'RECEPTIONIST', 'PATIENT'] as const).map((r) => {
+                const isSelected = role === r;
                 return (
                   <button
-                    key={r.id}
+                    key={r}
                     type="button"
-                    onClick={() => setRole(r.id)}
-                    className={`flex flex-col items-center justify-center py-2 px-1 rounded-md text-[11px] font-semibold transition-all ${
+                    onClick={() => handleSelectRole(r)}
+                    className={`py-1.5 px-1 rounded text-[11px] font-semibold transition-all ${
                       isSelected
-                        ? 'bg-white text-navy-900 shadow-xs border border-slate-200'
-                        : 'text-slate-500 hover:text-slate-800'
+                        ? 'bg-navy-900 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
                     }`}
                   >
-                    <Icon className="h-4 w-4 mb-1" />
-                    <span>{r.label}</span>
+                    {r.charAt(0) + r.slice(1).toLowerCase()}
                   </button>
                 );
               })}
             </div>
           </div>
 
+          {seedSuccess && (
+            <Alert type="success">
+              Demo accounts initialized in MongoDB! Click any role button above to log in.
+            </Alert>
+          )}
+
           {error && <Alert type="error">{error}</Alert>}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <Input
-              label="Mobile Number or Email"
+              label="Registered Mobile Number or Email"
               type="text"
-              placeholder="e.g. 9876543210 or admin@clinic.com"
+              placeholder="e.g. 9876543210 or admin@cityhealthcare.in"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               required
@@ -110,8 +160,13 @@ export const LoginPage: React.FC = () => {
               required
             />
 
-            <Button type="submit" variant="primary" className="w-full h-11 text-sm font-semibold" isLoading={isLoading}>
-              <span>Authenticate as {role}</span>
+            <Button
+              type="submit"
+              variant="primary"
+              className="w-full h-11 text-sm font-semibold bg-navy-900 hover:bg-navy-800"
+              isLoading={isLoading}
+            >
+              <span>Authenticate & Enter Workspace</span>
               <ArrowRight className="h-4 w-4 ml-1.5" />
             </Button>
           </form>

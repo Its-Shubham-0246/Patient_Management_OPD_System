@@ -14,6 +14,7 @@ import {
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { checkHealth } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 export interface HeaderProps {
   currentRole?: string;
@@ -27,6 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
   onQuickSearchClick
 }) => {
   const navigate = useNavigate();
+  const { user, logout, isAuthenticated } = useAuth();
   const [lang, setLang] = useState<'EN' | 'HI'>('EN');
   const [apiOnline, setApiOnline] = useState<boolean | null>(null);
 
@@ -37,6 +39,11 @@ export const Header: React.FC<HeaderProps> = ({
       })
       .catch(() => setApiOnline(false));
   }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   const clinicName = import.meta.env.VITE_DEFAULT_CLINIC_NAME || 'City Health Care Clinic';
 
@@ -73,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
       </div>
 
-      {/* Right: Actions, Backend Health Indicator, Role Previewer, Language, Profile */}
+      {/* Right: Actions, Backend Health Indicator, Language, User Session */}
       <div className="flex items-center gap-2 md:gap-3">
         {/* Backend API Health Status */}
         <div className="hidden lg:flex items-center gap-1.5 text-xs">
@@ -103,26 +110,6 @@ export const Header: React.FC<HeaderProps> = ({
           </Button>
         </Link>
 
-        {/* Role Switcher (Preview selector across 4 roles) */}
-        {onRoleChange && (
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-md text-xs">
-            <span className="text-[10px] font-bold text-slate-500 px-1 uppercase hidden xl:inline">Role:</span>
-            {(['ADMIN', 'DOCTOR', 'RECEPTIONIST', 'PATIENT'] as const).map((r) => (
-              <button
-                key={r}
-                onClick={() => onRoleChange(r)}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
-                  currentRole === r
-                    ? 'bg-navy-900 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
-                }`}
-              >
-                {r.charAt(0) + r.slice(1).toLowerCase()}
-              </button>
-            ))}
-          </div>
-        )}
-
         {/* Bilingual Language Switcher */}
         <button
           onClick={() => setLang(lang === 'EN' ? 'HI' : 'EN')}
@@ -139,22 +126,40 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-600 ring-2 ring-white"></span>
         </Button>
 
-        {/* User Profile */}
-        <div className="flex items-center gap-2 pl-1 border-l border-slate-200">
-          <div className="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-700 font-bold text-xs">
-            <UserIcon className="h-4 w-4" />
+        {/* User Profile & Auth Controls */}
+        {isAuthenticated && user ? (
+          <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+            <div className="hidden sm:block text-right">
+              <div className="text-xs font-bold text-slate-900 leading-tight truncate max-w-[120px]">
+                {user.fullName}
+              </div>
+              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+                {user.role}
+              </div>
+            </div>
+            <div className="h-8 w-8 rounded-full bg-navy-900 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+              {user.fullName.charAt(0)}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="text-xs text-slate-600 hover:text-red-600 p-2"
+              title="Sign Out"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/login')}
-            className="hidden sm:inline-flex text-xs text-slate-600 hover:text-red-600 gap-1 px-2"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            <span>Logout</span>
-          </Button>
-        </div>
+        ) : (
+          <Link to="/login">
+            <Button variant="primary" size="sm" className="text-xs">
+              Sign In
+            </Button>
+          </Link>
+        )}
       </div>
     </header>
   );
 };
+
+

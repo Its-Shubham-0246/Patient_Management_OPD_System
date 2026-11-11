@@ -156,3 +156,4 @@ export const ReceptionDashboard: React.FC = () => {
     </div>
   );
 };
+

@@ -26,3 +26,4 @@ export const TableHead: React.FC<ThHTMLAttributes<HTMLTableCellElement>> = ({ cl
 export const TableCell: React.FC<TdHTMLAttributes<HTMLTableCellElement>> = ({ className, ...props }) => (
   <td className={cn('p-4 align-middle text-slate-700', className)} {...props} />
 );
+

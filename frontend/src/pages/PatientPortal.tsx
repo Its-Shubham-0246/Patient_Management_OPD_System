@@ -194,3 +194,4 @@ export const PatientPortal: React.FC = () => {
     </div>
   );
 };
+

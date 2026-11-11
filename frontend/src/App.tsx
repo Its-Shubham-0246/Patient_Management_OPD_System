@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { AppLayout } from './components/layout/AppLayout';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
@@ -13,45 +15,104 @@ import { NotFoundPage } from './pages/NotFoundPage';
 
 export const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Fullscreen TV Display (No Navigation Shell) */}
-        <Route path="/display/waiting-room" element={<WaitingRoomDisplay />} />
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Fullscreen TV Display (Public Display) */}
+          <Route path="/display/waiting-room" element={<WaitingRoomDisplay />} />
 
-        {/* Public Authentication Views */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+          {/* Public Authentication Views */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
-        {/* Clinical Application Shell */}
-        <Route element={<AppLayout />}>
-          <Route path="/" element={<HomePage />} />
+          {/* Clinical Application Shell */}
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<HomePage />} />
 
-          {/* Admin Routes */}
-          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/*" element={<AdminDashboard />} />
+            {/* Admin Routes (Restricted to ADMIN) */}
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/*"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Doctor Routes */}
-          <Route path="/doctor" element={<Navigate to="/doctor/workspace" replace />} />
-          <Route path="/doctor/workspace" element={<DoctorDashboard />} />
-          <Route path="/doctor/*" element={<DoctorDashboard />} />
+            {/* Doctor Routes (Restricted to DOCTOR & ADMIN) */}
+            <Route path="/doctor" element={<Navigate to="/doctor/workspace" replace />} />
+            <Route
+              path="/doctor/workspace"
+              element={
+                <ProtectedRoute allowedRoles={['DOCTOR', 'ADMIN']}>
+                  <DoctorDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/doctor/*"
+              element={
+                <ProtectedRoute allowedRoles={['DOCTOR', 'ADMIN']}>
+                  <DoctorDashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Reception Routes */}
-          <Route path="/reception" element={<Navigate to="/reception/dashboard" replace />} />
-          <Route path="/reception/dashboard" element={<ReceptionDashboard />} />
-          <Route path="/reception/*" element={<ReceptionDashboard />} />
+            {/* Reception Routes (Restricted to RECEPTIONIST & ADMIN) */}
+            <Route path="/reception" element={<Navigate to="/reception/dashboard" replace />} />
+            <Route
+              path="/reception/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={['RECEPTIONIST', 'ADMIN']}>
+                  <ReceptionDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reception/*"
+              element={
+                <ProtectedRoute allowedRoles={['RECEPTIONIST', 'ADMIN']}>
+                  <ReceptionDashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Patient Portal Routes */}
-          <Route path="/portal" element={<Navigate to="/portal/dashboard" replace />} />
-          <Route path="/portal/dashboard" element={<PatientPortal />} />
-          <Route path="/portal/*" element={<PatientPortal />} />
+            {/* Patient Portal Routes (Restricted to PATIENT & ADMIN) */}
+            <Route path="/portal" element={<Navigate to="/portal/dashboard" replace />} />
+            <Route
+              path="/portal/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={['PATIENT', 'ADMIN']}>
+                  <PatientPortal />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/portal/*"
+              element={
+                <ProtectedRoute allowedRoles={['PATIENT', 'ADMIN']}>
+                  <PatientPortal />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Fallback 404 */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+            {/* Fallback 404 */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 };
 
 export default App;
+

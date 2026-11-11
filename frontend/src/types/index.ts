@@ -59,3 +59,4 @@ export interface QueueEntry {
   status: 'WAITING' | 'CALLED' | 'IN_CONSULTATION' | 'COMPLETED' | 'SKIPPED';
   isEmergency?: boolean;
 }
+

@@ -121,3 +121,4 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, isCollapsed = fal
     </aside>
   );
 };
+

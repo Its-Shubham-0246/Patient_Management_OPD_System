@@ -37,3 +37,4 @@ export const checkHealth = async () => {
     return { success: false, error: 'Cannot connect to backend server' };
   }
 };
+

@@ -15,3 +15,4 @@ export const env = {
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   CLINICAL_DISCOUNT_AUTH_PIN: process.env.CLINICAL_DISCOUNT_AUTH_PIN || '1234'
 };
+

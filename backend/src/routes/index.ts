@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import healthRoutes from './healthRoutes.js';
+import authRoutes from './authRoutes.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 
 const router = Router();
 
-// Health check endpoint
+// Core route controllers
 router.use('/health', healthRoutes);
+router.use('/auth', authRoutes);
 
 // Root API v1 info
 router.get('/', (req, res) => {
@@ -29,3 +31,4 @@ router.get('/', (req, res) => {
 });
 
 export default router;
+

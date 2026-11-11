@@ -7,13 +7,16 @@ import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Search, UserPlus, CheckCircle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export const AppLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
-  // Determine active role from current path or default to ADMIN
+  // Determine active role from authenticated user or current path
   const getInitialRole = () => {
+    if (user?.role) return user.role;
     if (location.pathname.startsWith('/doctor')) return 'DOCTOR';
     if (location.pathname.startsWith('/reception')) return 'RECEPTIONIST';
     if (location.pathname.startsWith('/portal')) return 'PATIENT';
@@ -23,6 +26,12 @@ export const AppLayout: React.FC = () => {
   const [currentRole, setCurrentRole] = useState<string>(getInitialRole());
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (user?.role) {
+      setCurrentRole(user.role);
+    }
+  }, [user]);
 
   // Synchronize role switch with route navigation
   const handleRoleChange = (newRole: string) => {
@@ -128,3 +137,4 @@ export const AppLayout: React.FC = () => {
     </div>
   );
 };
+
