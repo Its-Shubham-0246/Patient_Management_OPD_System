@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { User } from '../models/User.js';
 import { Patient, generateNextUHID } from '../models/Patient.js';
+import { Doctor } from '../models/Doctor.js';
+import { DoctorSchedule } from '../models/DoctorSchedule.js';
 import { ClinicSetting } from '../models/ClinicSetting.js';
 import {
   generateAccessToken,
@@ -374,6 +376,45 @@ export const seedDefaultUsers = async (req: Request, res: Response, next: NextFu
           });
           user.patientProfileId = patient._id as any;
           await user.save();
+        }
+      }
+
+      // Ensure DOCTOR profile and schedules exist
+      if (acc.role === 'DOCTOR') {
+        let doctor = await Doctor.findOne({ clinicId: clinic._id, userId: user._id });
+        if (!doctor) {
+          doctor = await Doctor.create({
+            clinicId: clinic._id,
+            userId: user._id,
+            fullName: acc.fullName,
+            phone: acc.phone,
+            email: acc.email,
+            medicalCouncilRegNo: 'MCI-2014-48291',
+            department: 'General Medicine',
+            specialization: 'Internal Medicine',
+            qualifications: ['MBBS', 'MD (Internal Medicine)'],
+            roomNumber: 'Room 101',
+            consultationFee: 500,
+            averageConsultationMinutes: 15,
+            maxDailyPatients: 30,
+            isAutoAllocatable: true,
+            status: 'ACTIVE'
+          });
+          user.doctorProfileId = doctor._id as any;
+          await user.save();
+
+          for (let day = 1; day <= 6; day++) {
+            await DoctorSchedule.create({
+              clinicId: clinic._id,
+              doctorId: doctor._id,
+              dayOfWeek: day,
+              shifts: [
+                { startTime: '09:00', endTime: '13:00', slotDurationMinutes: 15, maxPatientsPerShift: 16 },
+                { startTime: '17:00', endTime: '20:00', slotDurationMinutes: 15, maxPatientsPerShift: 12 }
+              ],
+              isActive: true
+            });
+          }
         }
       }
       results.push({

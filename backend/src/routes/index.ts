@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import healthRoutes from './healthRoutes.js';
 import authRoutes from './authRoutes.js';
+import clinicRoutes from './clinicRoutes.js';
+import doctorRoutes from './doctorRoutes.js';
+import staffRoutes from './staffRoutes.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 
 const router = Router();
@@ -8,6 +11,9 @@ const router = Router();
 // Core route controllers
 router.use('/health', healthRoutes);
 router.use('/auth', authRoutes);
+router.use('/clinic', clinicRoutes);
+router.use('/doctors', doctorRoutes);
+router.use('/staff', staffRoutes);
 
 // Root API v1 info
 router.get('/', (req, res) => {

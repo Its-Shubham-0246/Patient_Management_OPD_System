@@ -7,6 +7,9 @@ import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { ClinicSettingsPage } from './pages/admin/ClinicSettingsPage';
+import { DoctorManagementPage } from './pages/admin/DoctorManagementPage';
+import { StaffManagementPage } from './pages/admin/StaffManagementPage';
 import { DoctorDashboard } from './pages/DoctorDashboard';
 import { ReceptionDashboard } from './pages/ReceptionDashboard';
 import { PatientPortal } from './pages/PatientPortal';
@@ -36,6 +39,30 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute allowedRoles={['ADMIN']}>
                   <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/settings"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <ClinicSettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/doctors"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <DoctorManagementPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/staff"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <StaffManagementPage />
                 </ProtectedRoute>
               }
             />
