@@ -222,3 +222,4 @@ export const QuickPatientModal: React.FC<QuickPatientModalProps> = ({
     </Modal>
   );
 };
+

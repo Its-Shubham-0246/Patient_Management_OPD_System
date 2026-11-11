@@ -398,3 +398,4 @@ export const QuickBookingModal: React.FC<QuickBookingModalProps> = ({
     </Modal>
   );
 };
+

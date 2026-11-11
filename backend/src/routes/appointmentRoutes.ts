@@ -24,3 +24,4 @@ router.post('/', authenticate, createAppointment);
 router.put('/:id/status', authenticate, restrictTo('RECEPTIONIST', 'DOCTOR', 'ADMIN'), updateAppointmentStatus);
 
 export default router;
+

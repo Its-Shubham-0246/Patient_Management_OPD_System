@@ -9,3 +9,4 @@ router.get('/dashboard', authenticate, restrictTo('RECEPTIONIST', 'DOCTOR', 'ADM
 router.get('/overview', authenticate, restrictTo('ADMIN'), getDashboardStats);
 
 export default router;
+

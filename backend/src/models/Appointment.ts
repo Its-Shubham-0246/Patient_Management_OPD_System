@@ -71,3 +71,4 @@ AppointmentSchema.index(
 AppointmentSchema.index({ clinicId: 1, appointmentDate: 1, status: 1 });
 
 export const Appointment = mongoose.model<IAppointment>('Appointment', AppointmentSchema);
+
