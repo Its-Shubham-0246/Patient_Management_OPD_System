@@ -3,7 +3,7 @@
 > **Document ID:** PROJECT_TRACKER.md  
 > **System Scope:** Outpatient Department (OPD) Management Platform for a Single Clinic  
 > **Current Stage:** Stage B – Application Implementation  
-> **Active Phase:** PHASE 4 – Patient Management  
+> **Active Phase:** PHASE 5 – Admin and Receptionist Dashboards  
 > **Last Updated:** 2026-11-11  
 > **Repository Structure:** `frontend/`, `backend/`, `docs/`, `README.md`, `PROJECT_TRACKER.md`, `.gitignore`  
 
@@ -16,7 +16,7 @@
 | **Product Name** | Smart OPD (Single Clinic Digital Healthcare Platform) | Configurable clinic branding, working hours & fees |
 | **Stage A Status** | **100% COMPLETE & AUDITED** | All 15 master documents approved and harmonized |
 | **Stage B Target** | **15 Implementation Phases** | Full working MERN application with zero mock dependency |
-| **Current Focus** | **Phase 4: Patient Management** | Patient registration, unique UHID generator, debounced search (`Alt+C`), profiles, allergies, documents |
+| **Current Focus** | **Phase 5: Admin & Receptionist Dashboards** | Today's operational summary, patient & appointment KPIs, quick registration drawer (`Alt+N`), quick booking widget, live room monitor |
 | **Primary Tech Stack** | React 18, Vite, TypeScript, Tailwind CSS, Node.js 20/24, Express, MongoDB 8, Socket.IO | Production-grade single-clinic architecture |
 
 ---
@@ -28,8 +28,8 @@
 | **01** | **Foundation** | **COMPLETED** | React+Vite+TS (`frontend/`), Node+Express+TS (`backend/`), MongoDB connected, env configs, React Router v6, reusable UI components (shadcn/Tailwind), complete responsive navigation layout. Verified via Vite production build and API health probe. |
 | **02** | **Authentication** | **COMPLETED** | Login, logout, bcrypt hashing (cost 12), JWT 15m access + 7d rotated httpOnly refresh tokens, user registration, role guards (Admin, Doctor, Receptionist, Patient), brute-force lockout (5 attempts / 30 mins), seed endpoint (`POST /auth/seed`). |
 | **03** | **Clinic Administration** | **COMPLETED** | Clinic profile & master settings (`clinicSettings`), statutory Clinical Establishments Act registry, doctor directory CRUD, weekly shift roster matrix, leave tracking & approvals, staff/receptionist management, holiday calendar. |
-| **04** | **Patient Management** | **UP NEXT** | Patient registration, unique UHID generator (`OPD-YYMM-XXXXX`), debounced indexed search (`Alt+C`), patient medical profiles, allergies, chronic conditions, document upload. |
-| **05** | **Admin & Receptionist Dashboards** | PENDING | Today's operational summary, patient & appointment KPIs, quick patient registration drawer (`Alt+N`), quick booking widget, live room monitor. |
+| **04** | **Patient Management** | **COMPLETED** | Patient registration, unique UHID generator (`OPD-YYMM-XXXXX`), debounced indexed search (`Alt+C`), patient medical profiles, allergies & substance alerts, chronic conditions timeline, diagnostic reports vault. |
+| **05** | **Admin & Receptionist Dashboards** | **UP NEXT** | Today's operational summary, patient & appointment KPIs, quick patient registration drawer (`Alt+N`), quick booking widget, live room monitor. |
 | **06** | **Appointment Scheduling** | PENDING | Doctor availability engine, discrete slot calculation, online booking, receptionist booking, follow-up booking, walk-in appointments, reschedule/cancel, double-booking prevention (ACID txn). |
 | **07** | **OPD Queue** | PENDING | Check-in trigger, daily sequential token generation (Token #1, #2... per doctor), live Socket.IO queue, waiting/called/in-consultation/completed/skipped states, 4K TV display board with audio chime. |
 | **08** | **Doctor Consultation** | PENDING | Daily schedule roster, waiting patients list, patient longitudinal EMR, chief complaints, vitals with BMI, diagnosis with ICD-10, treatment plan, digital prescription builder. |
@@ -103,3 +103,38 @@
 - [x] Mount routes in `App.tsx` (`/admin/settings`, `/admin/doctors`, `/admin/staff`) protected by `ADMIN` role.
 - [x] Verify backend build (`npm run build --prefix backend` -> 0 errors) and live database API operations.
 - [x] Verify frontend build (`npm run build --prefix frontend` -> 0 errors).
+
+### Phase 4 Task Checklist: Patient Management
+- [x] Expand `Patient` model in `backend/src/models/Patient.ts`:
+  - Demographic fields: full name, phone, email, date of birth, age, gender, blood group.
+  - Unique sequential UHID generator: `OPD-YYMM-XXXXX` with monthly auto-increment.
+  - Emergency contact: name, relation, phone.
+  - Postal address: line1, line2, city, state, pincode.
+  - Critical medical alerts: drug allergies array and chronic conditions array.
+  - Longitudinal medical history: structured conditions, diagnosed years, active medications, notes.
+  - Diagnostic document vault: subdocument schema for title, document category (LAB_REPORT, IMAGING, PREVIOUS_PRESCRIPTION, DISCHARGE_SUMMARY, OTHER), file URL, notes, and upload timestamp.
+  - DPDP Act 2023 digital consent timestamp.
+- [x] Implement Patient Controller (`backend/src/controllers/patientController.ts`) & Routes (`backend/src/routes/patientRoutes.ts`):
+  - `GET /api/v1/patients`: Paginated list of clinic patients with blood group and gender filtering.
+  - `GET /api/v1/patients/search?q=...`: Instant debounced search matching UHID, phone, or name (used for quick registration & booking lookups).
+  - `GET /api/v1/patients/:id`: Profile fetch with role guard (patients can only access their own record; staff/clinicians can access all).
+  - `POST /api/v1/patients`: Patient registration with validation, duplicate phone guard, and automatic UHID issuance.
+  - `PUT /api/v1/patients/:id`: Demographics, address, and allergies update.
+  - `POST /api/v1/patients/:id/documents`: Secure report attachment to patient vault.
+  - `POST /api/v1/patients/:id/medical-history`: Chronic condition and medication entry.
+  - `GET /api/v1/patients/:id/medical-history`: Longitudinal medical history aggregation.
+- [x] Implement Frontend Client Service (`frontend/src/services/patientService.ts`).
+- [x] Create Reception Patient Directory Page (`frontend/src/pages/reception/PatientDirectoryPage.tsx`):
+  - Global `Alt+C` keyboard shortcut support for instant search focus.
+  - Patient search and blood group filter chips.
+  - Interactive table displaying UHID pills, patient demographics, drug allergy warnings, and chronic condition tags.
+  - Registration modal dialog with instant UHID issuance card and one-click copy button.
+- [x] Create Patient Profile & EMR View (`frontend/src/pages/patient/PatientProfilePage.tsx`):
+  - Critical red allergy warning banner and amber chronic condition alert banner.
+  - Demographics and emergency contact editor with save functionality.
+  - Medical history & allergy management tab (add/remove allergy tags, record chronic conditions).
+  - Diagnostic document vault tab with report category selector and direct file viewing.
+  - Visit timeline tab.
+- [x] Mount routes in `App.tsx` (`/reception/patients`, `/doctor/patients`, `/patients/:id`, `/doctor/patients/:id`).
+- [x] Verify backend build (`npm run build --prefix backend` -> 0 errors) and live database API operations.
+- [x] Verify frontend build (`npm run build --prefix frontend` -> 0 errors in 6.01s).

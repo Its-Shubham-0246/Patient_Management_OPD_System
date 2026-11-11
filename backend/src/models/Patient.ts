@@ -1,5 +1,21 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface IPatientDocument {
+  _id?: mongoose.Types.ObjectId;
+  title: string;
+  docType: 'LAB_REPORT' | 'IMAGING' | 'PREVIOUS_PRESCRIPTION' | 'DISCHARGE_SUMMARY' | 'OTHER';
+  fileUrl: string;
+  uploadedAt: Date;
+  notes?: string;
+}
+
+export interface IChronicCondition {
+  condition: string;
+  diagnosedYear?: number;
+  medications?: string;
+  notes?: string;
+}
+
 export interface IPatient extends Document {
   clinicId: mongoose.Types.ObjectId;
   userId?: mongoose.Types.ObjectId;
@@ -10,9 +26,18 @@ export interface IPatient extends Document {
   dateOfBirth?: Date;
   age?: number;
   gender: 'MALE' | 'FEMALE' | 'OTHER';
-  bloodGroup?: string;
+  bloodGroup?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
   allergies: string[];
   chronicConditions: string[];
+  medicalHistory: IChronicCondition[];
+  documents: IPatientDocument[];
+  address?: {
+    line1?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+  };
   emergencyContact?: {
     name: string;
     relation: string;
@@ -23,6 +48,31 @@ export interface IPatient extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+const PatientDocumentSchema = new Schema(
+  {
+    title: { type: String, required: true, trim: true },
+    docType: {
+      type: String,
+      enum: ['LAB_REPORT', 'IMAGING', 'PREVIOUS_PRESCRIPTION', 'DISCHARGE_SUMMARY', 'OTHER'],
+      default: 'LAB_REPORT'
+    },
+    fileUrl: { type: String, required: true },
+    uploadedAt: { type: Date, default: Date.now },
+    notes: { type: String, trim: true }
+  },
+  { _id: true }
+);
+
+const ChronicConditionSchema = new Schema(
+  {
+    condition: { type: String, required: true, trim: true },
+    diagnosedYear: { type: Number },
+    medications: { type: String, trim: true },
+    notes: { type: String, trim: true }
+  },
+  { _id: true }
+);
 
 const PatientSchema = new Schema<IPatient>(
   {
@@ -41,10 +91,19 @@ const PatientSchema = new Schema<IPatient>(
     },
     allergies: [{ type: String, trim: true }],
     chronicConditions: [{ type: String, trim: true }],
+    medicalHistory: [ChronicConditionSchema],
+    documents: [PatientDocumentSchema],
+    address: {
+      line1: { type: String, trim: true },
+      line2: { type: String, trim: true },
+      city: { type: String, trim: true },
+      state: { type: String, trim: true },
+      pincode: { type: String, trim: true }
+    },
     emergencyContact: {
-      name: { type: String },
-      relation: { type: String },
-      phone: { type: String }
+      name: { type: String, trim: true },
+      relation: { type: String, trim: true },
+      phone: { type: String, trim: true }
     },
     consentGiven: { type: Boolean, default: true },
     consentDate: { type: Date, default: Date.now }
@@ -53,6 +112,7 @@ const PatientSchema = new Schema<IPatient>(
 );
 
 PatientSchema.index({ clinicId: 1, phone: 1 });
+PatientSchema.index({ clinicId: 1, uhid: 1 });
 PatientSchema.index({ clinicId: 1, fullName: 'text', uhid: 'text' });
 
 export const Patient = mongoose.model<IPatient>('Patient', PatientSchema);
@@ -82,4 +142,3 @@ export const generateNextUHID = async (clinicPrefix: string = 'OPD'): Promise<st
 
   return `${periodPrefix}-${nextSequence.toString().padStart(5, '0')}`;
 };
-

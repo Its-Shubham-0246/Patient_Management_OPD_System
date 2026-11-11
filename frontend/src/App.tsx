@@ -10,6 +10,8 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { ClinicSettingsPage } from './pages/admin/ClinicSettingsPage';
 import { DoctorManagementPage } from './pages/admin/DoctorManagementPage';
 import { StaffManagementPage } from './pages/admin/StaffManagementPage';
+import { PatientDirectoryPage } from './pages/reception/PatientDirectoryPage';
+import { PatientProfilePage } from './pages/patient/PatientProfilePage';
 import { DoctorDashboard } from './pages/DoctorDashboard';
 import { ReceptionDashboard } from './pages/ReceptionDashboard';
 import { PatientPortal } from './pages/PatientPortal';
@@ -86,6 +88,22 @@ export const App: React.FC = () => {
               }
             />
             <Route
+              path="/doctor/patients"
+              element={
+                <ProtectedRoute allowedRoles={['DOCTOR', 'ADMIN']}>
+                  <PatientDirectoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/doctor/patients/:id"
+              element={
+                <ProtectedRoute allowedRoles={['DOCTOR', 'ADMIN']}>
+                  <PatientProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/doctor/*"
               element={
                 <ProtectedRoute allowedRoles={['DOCTOR', 'ADMIN']}>
@@ -105,10 +123,36 @@ export const App: React.FC = () => {
               }
             />
             <Route
+              path="/reception/patients"
+              element={
+                <ProtectedRoute allowedRoles={['RECEPTIONIST', 'ADMIN']}>
+                  <PatientDirectoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/reception/*"
               element={
                 <ProtectedRoute allowedRoles={['RECEPTIONIST', 'ADMIN']}>
                   <ReceptionDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* General Patient Profile Routes */}
+            <Route
+              path="/patients"
+              element={
+                <ProtectedRoute allowedRoles={['RECEPTIONIST', 'DOCTOR', 'ADMIN']}>
+                  <PatientDirectoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patients/:id"
+              element={
+                <ProtectedRoute allowedRoles={['RECEPTIONIST', 'DOCTOR', 'ADMIN', 'PATIENT']}>
+                  <PatientProfilePage />
                 </ProtectedRoute>
               }
             />
