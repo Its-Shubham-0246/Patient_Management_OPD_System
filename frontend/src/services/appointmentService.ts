@@ -164,6 +164,45 @@ export const autoAllocateDoctor = async (department: string, date?: string): Pro
   return res.data.data;
 };
 
+export const getCalendarAppointments = async (
+  startDate: string,
+  endDate: string,
+  doctorId?: string
+): Promise<AppointmentData[]> => {
+  const res = await apiClient.get('/appointments/calendar', { params: { startDate, endDate, doctorId } });
+  return res.data.data;
+};
+
+export const rescheduleAppointment = async (
+  id: string,
+  newDate: string,
+  newTimeSlot: string,
+  reason?: string
+): Promise<AppointmentData> => {
+  const res = await apiClient.put(`/appointments/${id}/reschedule`, { newDate, newTimeSlot, reason });
+  return res.data.data;
+};
+
+export const cancelAppointment = async (
+  id: string,
+  cancellationReason: string
+): Promise<{ message: string; appointmentId: string; status: string }> => {
+  const res = await apiClient.put(`/appointments/${id}/cancel`, { cancellationReason });
+  return res.data.data;
+};
+
+export const bookAutoAllocatedAppointment = async (data: {
+  patientId: string;
+  department: string;
+  appointmentDate: string;
+  preferredTimeSlot?: string;
+  bookingChannel?: string;
+  notes?: string;
+}): Promise<AppointmentData> => {
+  const res = await apiClient.post('/appointments/auto-allocate', data);
+  return res.data.data;
+};
+
 export const getDashboardStats = async (): Promise<DashboardStatsResponse> => {
   const res = await apiClient.get('/analytics/dashboard');
   return res.data.data;

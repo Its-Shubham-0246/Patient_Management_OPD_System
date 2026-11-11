@@ -3,7 +3,7 @@
 > **Document ID:** PROJECT_TRACKER.md  
 > **System Scope:** Outpatient Department (OPD) Management Platform for a Single Clinic  
 > **Current Stage:** Stage B – Application Implementation  
-> **Active Phase:** PHASE 6 – Appointment Scheduling  
+> **Active Phase:** PHASE 7 – OPD Queue  
 > **Last Updated:** 2026-11-11  
 > **Repository Structure:** `frontend/`, `backend/`, `docs/`, `README.md`, `PROJECT_TRACKER.md`, `.gitignore`  
 
@@ -16,7 +16,7 @@
 | **Product Name** | Smart OPD (Single Clinic Digital Healthcare Platform) | Configurable clinic branding, working hours & fees |
 | **Stage A Status** | **100% COMPLETE & AUDITED** | All 15 master documents approved and harmonized |
 | **Stage B Target** | **15 Implementation Phases** | Full working MERN application with zero mock dependency |
-| **Current Focus** | **Phase 6: Appointment Scheduling** | Doctor availability engine, discrete slot calculation, online booking, receptionist booking, follow-up booking, walk-in appointments, reschedule/cancel, double-booking prevention (ACID txn) |
+| **Current Focus** | **Phase 7: OPD Queue** | Token generation, check-in trigger, live Socket.IO queue, waiting status, in-consultation status, completed status, estimated waiting time, 4K TV display board with audio chime |
 | **Primary Tech Stack** | React 18, Vite, TypeScript, Tailwind CSS, Node.js 20/24, Express, MongoDB 8, Socket.IO | Production-grade single-clinic architecture |
 
 ---
@@ -30,8 +30,8 @@
 | **03** | **Clinic Administration** | **COMPLETED** | Clinic profile & master settings (`clinicSettings`), statutory Clinical Establishments Act registry, doctor directory CRUD, weekly shift roster matrix, leave tracking & approvals, staff/receptionist management, holiday calendar. |
 | **04** | **Patient Management** | **COMPLETED** | Patient registration, unique UHID generator (`OPD-YYMM-XXXXX`), debounced indexed search (`Alt+C`), patient medical profiles, allergies & substance alerts, chronic conditions timeline, diagnostic reports vault. |
 | **05** | **Admin & Receptionist Dashboards** | **COMPLETED** | Today's operational summary, patient & appointment KPIs, quick patient registration modal (`Alt+N`), quick booking modal, live active consulting room telemetry, arrival check-in and token issuance. |
-| **06** | **Appointment Scheduling** | **UP NEXT** | Doctor availability engine, discrete slot calculation, online booking, receptionist booking, follow-up booking, walk-in appointments, reschedule/cancel, double-booking prevention (ACID txn). |
-| **07** | **OPD Queue** | PENDING | Check-in trigger, daily sequential token generation (Token #1, #2... per doctor), live Socket.IO queue, waiting/called/in-consultation/completed/skipped states, 4K TV display board with audio chime. |
+| **06** | **Appointment Scheduling** | **COMPLETED** | Doctor availability engine, discrete slot calculation, online booking, receptionist booking, follow-up booking, walk-in appointments, reschedule/cancel, double-booking prevention (ACID compound index & app validation). |
+| **07** | **OPD Queue** | **UP NEXT** | Check-in trigger, daily sequential token generation (Token #1, #2... per doctor), live Socket.IO queue, waiting/called/in-consultation/completed/skipped states, 4K TV display board with audio chime. |
 | **08** | **Doctor Consultation** | PENDING | Daily schedule roster, waiting patients list, patient longitudinal EMR, chief complaints, vitals with BMI, diagnosis with ICD-10, treatment plan, digital prescription builder. |
 | **09** | **Medical Records** | PENDING | Prescription history (write-once immutable), medical reports vault, diagnostic uploads, visit timeline, follow-up history. |
 | **10** | **Billing** | PENDING | Consultation charges, itemized invoice generation, payment recording (Cash, Static UPI QR, Card), discounts with Admin PIN permission, daily collections report. |
@@ -173,3 +173,37 @@
   - Print Ingress Slip dialog.
 - [x] Verify backend build (`npm run build --prefix backend` -> 0 errors) and live database API operations.
 - [x] Verify frontend build (`npm run build --prefix frontend` -> 0 errors in 13.60s).
+
+### Phase 6 Task Checklist: Appointment Scheduling
+- [x] Enhance Appointment Scheduling Controller (`backend/src/controllers/appointmentController.ts`):
+  - `rescheduleAppointment`: atomic date/slot reassignment with conflict detection.
+  - `cancelAppointment`: cancellation with reason, freeing the slot immediately.
+  - `getCalendarAppointments`: multi-day range queries for agenda and weekly grids.
+  - `bookAutoAllocatedAppointment`: 1-click allocation and atomic reservation.
+  - `getAvailableSlots`: accounts for weekly shifts, approved doctor leaves, and clinic holidays.
+- [x] Mount routes in `backend/src/routes/appointmentRoutes.ts`:
+  - `GET /api/v1/appointments/calendar`
+  - `POST /api/v1/appointments/auto-allocate`
+  - `PUT /api/v1/appointments/:id/reschedule`
+  - `PUT /api/v1/appointments/:id/cancel`
+- [x] Update Frontend Appointment Service (`frontend/src/services/appointmentService.ts`):
+  - Add calendar, rescheduling, cancellation, and auto-allocated booking APIs.
+  - Extend `User` interface with `patientProfileId`, `doctorProfileId`, `uhid`.
+- [x] Build Clinic Appointment Scheduling Page (`frontend/src/pages/appointments/AppointmentSchedulingPage.tsx`):
+  - Day Agenda, Week Grid, and All List view modes.
+  - Interactive date navigator with date picker and jump-to-today.
+  - Doctor and Status filtering.
+  - In-line action buttons: 1-click Check-In, Reschedule with slot picker modal, Cancel with reason modal.
+- [x] Build Patient Portal Appointment Booking Page (`frontend/src/pages/patient/BookAppointmentPage.tsx`):
+  - 4-step booking wizard (Specialty -> Allocation Mode -> Date & Slots -> Symptoms/Confirmation).
+  - Choice between Smart Auto-Allocation ($W_i$) and manual clinician selection.
+  - Booking confirmation receipt screen with doctor, room, slot, and clinic location.
+- [x] Mount routes in `frontend/src/App.tsx`:
+  - `/admin/appointments` -> `AppointmentSchedulingPage`
+  - `/doctor/appointments` -> `AppointmentSchedulingPage`
+  - `/reception/appointments` -> `AppointmentSchedulingPage`
+  - `/portal/book` -> `BookAppointmentPage`
+- [x] Verify backend build (`npm run build --prefix backend` -> 0 errors).
+- [x] Verify frontend build (`npm run build --prefix frontend` -> 0 errors in 16.04s).
+- [x] Run live integration test against local MongoDB:
+  - Booking -> Double-booking rejection (HTTP 409) -> Rescheduling -> Calendar query -> Auto-allocated booking -> Cancellation.

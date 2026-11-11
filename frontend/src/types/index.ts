@@ -7,6 +7,10 @@ export interface User {
   phone: string;
   role: UserRole;
   clinicId: string;
+  patientProfileId?: string;
+  doctorProfileId?: string;
+  uhid?: string;
+  lastLoginAt?: string;
 }
 
 export interface ClinicInfo {
