@@ -13,6 +13,7 @@ import { StaffManagementPage } from './pages/admin/StaffManagementPage';
 import { PatientDirectoryPage } from './pages/reception/PatientDirectoryPage';
 import { PatientProfilePage } from './pages/patient/PatientProfilePage';
 import { DoctorDashboard } from './pages/DoctorDashboard';
+import { DoctorWorkspacePage } from './pages/doctor/DoctorWorkspacePage';
 import { ReceptionDashboard } from './pages/ReceptionDashboard';
 import { AppointmentSchedulingPage } from './pages/appointments/AppointmentSchedulingPage';
 import { BookAppointmentPage } from './pages/patient/BookAppointmentPage';
@@ -88,6 +89,14 @@ export const App: React.FC = () => {
               }
             />
             <Route
+              path="/admin/consultation"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <DoctorWorkspacePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/admin/*"
               element={
                 <ProtectedRoute allowedRoles={['ADMIN']}>
@@ -99,10 +108,18 @@ export const App: React.FC = () => {
             {/* Doctor Routes (Restricted to DOCTOR & ADMIN) */}
             <Route path="/doctor" element={<Navigate to="/doctor/workspace" replace />} />
             <Route
-              path="/doctor/workspace"
+              path="/doctor/dashboard"
               element={
                 <ProtectedRoute allowedRoles={['DOCTOR', 'ADMIN']}>
                   <DoctorDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/doctor/workspace"
+              element={
+                <ProtectedRoute allowedRoles={['DOCTOR', 'ADMIN']}>
+                  <DoctorWorkspacePage />
                 </ProtectedRoute>
               }
             />

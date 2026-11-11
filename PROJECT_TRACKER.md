@@ -3,7 +3,7 @@
 > **Document ID:** PROJECT_TRACKER.md  
 > **System Scope:** Outpatient Department (OPD) Management Platform for a Single Clinic  
 > **Current Stage:** Stage B – Application Implementation  
-> **Active Phase:** PHASE 8 – Doctor Consultation  
+> **Active Phase:** PHASE 9 – Medical Records  
 > **Last Updated:** 2026-11-12  
 > **Repository Structure:** `frontend/`, `backend/`, `docs/`, `README.md`, `PROJECT_TRACKER.md`, `.gitignore`  
 
@@ -16,7 +16,7 @@
 | **Product Name** | Smart OPD (Single Clinic Digital Healthcare Platform) | Configurable clinic branding, working hours & fees |
 | **Stage A Status** | **100% COMPLETE & AUDITED** | All 15 master documents approved and harmonized |
 | **Stage B Target** | **15 Implementation Phases** | Full working MERN application with zero mock dependency |
-| **Current Focus** | **Phase 8: Doctor Consultation** | Today's appointments, waiting patients, patient longitudinal EMR, consultation notes, vitals with BMI auto-calc, diagnosis (ICD-10), treatment plan, digital prescriptions |
+| **Current Focus** | **Phase 9: Medical Records** | Prescription history, diagnostic report uploads, longitudinal visit timeline, follow-up history, DISHA/DPDP 7-year retention |
 | **Primary Tech Stack** | React 18, Vite, TypeScript, Tailwind CSS, Node.js 20/24, Express, MongoDB 8, Socket.IO | Production-grade single-clinic architecture |
 
 ---
@@ -32,7 +32,8 @@
 | **05** | **Admin & Receptionist Dashboards** | **COMPLETED** | Today's operational summary, patient & appointment KPIs, quick patient registration modal (`Alt+N`), quick booking modal, live active consulting room telemetry, arrival check-in and token issuance. |
 | **06** | **Appointment Scheduling** | **COMPLETED** | Doctor availability engine, discrete slot calculation, online booking, receptionist booking, follow-up booking, walk-in appointments, reschedule/cancel, double-booking prevention (ACID compound index & app validation). |
 | **07** | **OPD Queue** | **COMPLETED** | Check-in trigger, daily sequential token generation (Token #1, #2... per doctor), live Socket.IO queue, waiting/called/in-consultation/completed/skipped states, emergency priority promotion, dynamic wait time estimation, 4K TV display board with DPDP Act name masking (`RAHUL M.`) and dual-tone audio chime (D5->A5). |
-| **08** | **Doctor Consultation** | **IN PROGRESS** | Daily schedule roster, waiting patients list, patient longitudinal EMR, chief complaints, vitals with BMI, diagnosis with ICD-10, treatment plan, digital prescription builder. |
+| **08** | **Doctor Consultation** | **COMPLETED** | Daily schedule roster, waiting patients list, patient longitudinal EMR, chief complaints, vitals with BMI auto-calc, diagnosis with ICD-10, treatment plan, digital prescription builder (`RX-YYMM-XXXXX`), official printable A4 prescription letterhead, digital signature block. |
+| **09** | **Medical Records** | **UP NEXT** | Prescription history (write-once immutable), medical reports vault, diagnostic uploads, visit timeline, follow-up history. |
 | **09** | **Medical Records** | PENDING | Prescription history (write-once immutable), medical reports vault, diagnostic uploads, visit timeline, follow-up history. |
 | **10** | **Billing** | PENDING | Consultation charges, itemized invoice generation, payment recording (Cash, Static UPI QR, Card), discounts with Admin PIN permission, daily collections report. |
 | **11** | **Notifications** | PENDING | Appointment confirmations, reminders, cancellation alerts, follow-up alerts, email (Nodemailer) and SMS integration ready. |
@@ -248,33 +249,75 @@
   - Emergency patient checked in -> Priority 1.
 
 ### Phase 8 Task Checklist: Doctor Consultation
-- [ ] Create Prescription Model (`backend/src/models/Prescription.ts`):
-  - Linkages: clinicId, patientId, doctorId, appointmentId, visitId.
-  - Vitals: bpSystolic, bpDiastolic, pulseRate, temperatureF, respiratoryRate, spo2Percent, weightKg, heightCm, bmi (auto-computed).
-  - Clinical examination & notes: chiefComplaints array (complaint, duration, severity), clinicalObservations, pastHistoryNotes.
-  - Diagnosis: provisionalDiagnosis, finalDiagnosis, icd10Codes array (code, description).
-  - Rx Medications: drugName, genericName, form (Tablet, Syrup, Capsule, Injection, Drops, Ointment), dosageStrength, frequency (e.g. 1-0-1, 1-0-0, 0-0-1, 1-1-1, SOS), durationDays, foodTiming (BEFORE_FOOD, AFTER_FOOD, WITH_FOOD, EMPTY_STOMACH), specialInstructions.
-  - Investigations ordered: labTests array, radiologyTests array.
-  - Advice & Lifestyle: generalAdvice, dietaryRestrictions.
-  - Follow-up: followUpDays, followUpDate, urgentSosWarning.
-  - Digital signature / verification: doctorRegNumber, signedAt, isDraft.
-- [ ] Build Consultation & Prescription Controller (`backend/src/controllers/prescriptionController.ts`) & Routes:
-  - `GET /api/v1/prescriptions/patient/:patientId`: Patient prescription history.
-  - `GET /api/v1/prescriptions/:id`: Single prescription details.
-  - `POST /api/v1/prescriptions`: Save draft or complete prescription.
-  - `PUT /api/v1/prescriptions/:id`: Update draft prescription.
-  - `POST /api/v1/prescriptions/:id/finalize`: Finalize and sign prescription (write-once lock, auto-updates visit to COMPLETED).
-- [ ] Create Doctor Consultation Workspace (`frontend/src/pages/doctor/DoctorWorkspacePage.tsx`):
+- [x] Create Prescription Model (`backend/src/models/Prescription.ts`):
+  - Linkages: clinicId, patientId, doctorId, visitId.
+  - Vitals: weightKg, heightCm, bmi (auto-computed), bloodPressure, pulseRate, temperatureF, respiratoryRate, spo2Percent, bloodGlucose.
+  - Clinical examination & notes: chiefComplaints array, clinicalObservations.
+  - Diagnosis: diagnosis array, icd10Codes array ({ code, description }).
+  - Rx Medications: drugName, genericName, form (Tablet, Syrup, Capsule, Injection, Drops, Ointment, Inhaler, Other), dosage, frequency (1-0-1, 1-0-0, 0-0-1, 1-1-1, SOS), duration, instructions, quantity.
+  - Investigations ordered: labTests array.
+  - Advice & Lifestyle: advice, dietaryRestrictions.
+  - Follow-up: followUpDays, followUpDate.
+  - Digital signature / verification: doctorRegNumber, finalizedAt, digitalSignature, isFinalized.
+- [x] Enhance Visit Model (`backend/src/models/Visit.ts`):
+  - Added vitals, chiefComplaint, consultationNotes, diagnosis, icdCodes, treatmentPlan, followUpRequired, prescriptionId, invoiceId.
+- [x] Build Consultation & Prescription Controller (`backend/src/controllers/prescriptionController.ts`) & Routes:
+  - `GET /api/v1/prescriptions/formulary`: Common medication formulary catalog & ICD-10 quick codes.
+  - `GET /api/v1/prescriptions/doctor/today`: Today's completed consultations list for clinician.
+  - `GET /api/v1/prescriptions/patient/:patientId`: Patient longitudinal prescription history.
+  - `GET /api/v1/prescriptions/visit/:visitId`: Single prescription by visit ID.
+  - `GET /api/v1/prescriptions/:id`: Prescription detail with populated patient, doctor, clinic info.
+  - `POST /api/v1/prescriptions/:visitId`: Save draft or finalize consultation:
+    - Auto-generates monthly sequential prescription number `RX-YYMM-XXXXX`.
+    - Auto-computes BMI from weight and height.
+    - When `isFinalized: true`: marks prescription signed, updates Visit to `COMPLETED`, updates QueueEntry to `COMPLETED`, updates Appointment to `COMPLETED`, broadcasts Socket.IO events.
+- [x] Mount routes in `backend/src/routes/prescriptionRoutes.ts` and `backend/src/routes/index.ts` under `/api/v1/prescriptions`.
+- [x] Build Frontend Prescription Service (`frontend/src/services/prescriptionService.ts`).
+- [x] Create Doctor Consultation Workspace (`frontend/src/pages/doctor/DoctorWorkspacePage.tsx`):
   - Split-view ergonomic layout:
-    - Left column: Today's Waiting Queue & Active Patient Selector.
-    - Middle/Right column: Active Patient Banner with red allergy alerts, longitudinal EMR tabs (Past Visits, Lab Reports, Prescriptions), and Consultation / Rx Builder.
+    - Left column: Today's Waiting Queue & active patient indicator with one-click "Call Next Token" and live refresh.
+    - Right column: Active Patient Banner with red allergy alerts, age/gender, phone, and tab switcher ("Prescription Builder" vs "Past History").
   - Interactive Digital Rx Builder:
-    - Vitals input card with instant BMI calculation ($weight / (height/100)^2$) and classification (Underweight, Normal, Overweight, Obese).
-    - Chief complaints chip list with duration.
-    - ICD-10 Diagnosis search & select.
-    - Fast Medication Entry table: Drug autocomplete/suggestions, Form, Strength, Frequency (1-0-1 pills), Food Timing pills, Duration, Instructions.
-    - Ordered Investigations & Advice.
-    - Follow-up date picker / quick +7, +14, +30 day buttons.
-    - 1-click "Finalize & Print Prescription" generating clean clinical Rx letterhead slip.
-- [ ] Mount `/doctor/workspace` in `frontend/src/App.tsx`.
+    - Vitals input card with instant BMI auto-calc and color-coded status badge (Normal, Overweight, Obese).
+    - Chief complaints clickable chips + custom complaints input.
+    - ICD-10 diagnosis chips + custom diagnosis input.
+    - Fast Medication Entry table: Quick formulary presets (+Paracetamol, +Augmentin, +Pantoprazole, etc.), Form dropdown, Strength, Frequency pills (1-0-1, 1-0-0, 0-0-1, 1-1-1, SOS), Duration, Instructions, and delete button.
+    - Ordered Investigations (CBC, Blood Sugar, LFT, KFT, ECG, Chest X-Ray) clickable chips.
+    - Advice & Dietary restrictions text areas.
+    - Follow-up quick buttons (+3d, +5d, +7d, +14d, +30d) & date picker.
+    - "Save as Draft" and "Finalize & Sign Consultation" action buttons.
+    - Official printable A4 digital prescription letterhead modal with clinic header, doctor registration details, patient demographics, vitals, ℞ symbol, medication table, advice, and authenticated signature block.
+- [x] Mount `/doctor/workspace` and `/admin/consultation` in `frontend/src/App.tsx` and `frontend/src/components/layout/Sidebar.tsx`.
+- [x] Verify backend build (`npm run build --prefix backend` -> 0 errors).
+- [x] Verify frontend build (`npm run build --prefix frontend` -> 0 errors in 25.52s).
+- [x] Execute automated end-to-end integration test (`node backend/test_phase8.mjs`):
+  - Formulary catalog query returned 15 medications and 11 ICD-10 codes.
+  - Registered patient with penicillin allergy.
+  - Checked into queue -> Token #4 generated.
+  - Doctor called token and started consultation.
+  - Draft prescription saved -> Auto BMI computed (25.5), Rx number assigned (`RX-2611-00001`).
+  - Prescription retrieved by visit ID.
+  - Consultation finalized -> Digitally signed, Visit & Queue transitioned to `COMPLETED`.
+  - Patient longitudinal history verified.
+  - Doctor today prescriptions list verified.
+
+### Phase 9 Task Checklist: Medical Records
+- [ ] Create Medical Report Model (`backend/src/models/MedicalReport.ts`):
+  - Linkages: clinicId, patientId, doctorId, visitId.
+  - Category: LAB_REPORT, IMAGING, PREVIOUS_PRESCRIPTION, DISCHARGE_SUMMARY, OTHER.
+  - Document metadata: reportTitle, fileUrl, fileType, fileSizeBytes, testDate, labName, notes, uploaderId.
+  - DISHA / DPDP compliance fields: retentionExpiryDate (7 years), isArchived.
+- [ ] Build Medical Records Controller (`backend/src/controllers/medicalRecordController.ts`) & Routes:
+  - `GET /api/v1/records/patient/:patientId/timeline`: Unified longitudinal medical timeline aggregating all visits, consultations, prescriptions, and lab reports into one chronological feed.
+  - `GET /api/v1/records/patient/:patientId/reports`: Paginated list of uploaded diagnostic reports with category filter.
+  - `POST /api/v1/records/patient/:patientId/reports`: Upload/attach diagnostic report.
+  - `DELETE /api/v1/records/reports/:id`: Soft delete / archive report with audit trail.
+- [ ] Build Frontend Medical Records Service (`frontend/src/services/medicalRecordService.ts`).
+- [ ] Build Patient Medical Records & EMR Hub Page (`frontend/src/pages/patient/MedicalRecordsPage.tsx`):
+  - Unified longitudinal visit timeline with chronological encounter cards.
+  - Prescriptions archive with 1-click printable view.
+  - Diagnostic reports vault with category tabs, report preview, and upload dialog.
+  - Follow-up tracking timeline.
+- [ ] Mount routes in `frontend/src/App.tsx`:
+  - `/doctor/records`, `/reception/records`, `/portal/records`.
 - [ ] Verify TypeScript builds and run integration test against live backend & MongoDB.

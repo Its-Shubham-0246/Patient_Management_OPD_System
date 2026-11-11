@@ -54,6 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, isCollapsed = fal
       default:
         return [
           { to: '/admin/dashboard', label: 'Operational Cockpit', icon: LayoutDashboard },
+          { to: '/admin/consultation', label: 'Consultation Desk', icon: Stethoscope },
           { to: '/admin/doctors', label: 'Doctor Directory & Rosters', icon: Stethoscope },
           { to: '/admin/staff', label: 'Front-Desk Staff', icon: Users },
           { to: '/admin/appointments', label: 'Clinic Appointments', icon: Calendar },
