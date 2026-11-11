@@ -16,6 +16,7 @@ import { DoctorDashboard } from './pages/DoctorDashboard';
 import { ReceptionDashboard } from './pages/ReceptionDashboard';
 import { AppointmentSchedulingPage } from './pages/appointments/AppointmentSchedulingPage';
 import { BookAppointmentPage } from './pages/patient/BookAppointmentPage';
+import { LiveQueuePage } from './pages/queue/LiveQueuePage';
 import { PatientPortal } from './pages/PatientPortal';
 import { WaitingRoomDisplay } from './pages/WaitingRoomDisplay';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -75,6 +76,14 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute allowedRoles={['ADMIN']}>
                   <AppointmentSchedulingPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/queue"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <LiveQueuePage />
                 </ProtectedRoute>
               }
             />
@@ -145,6 +154,14 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute allowedRoles={['RECEPTIONIST', 'ADMIN']}>
                   <AppointmentSchedulingPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reception/queue"
+              element={
+                <ProtectedRoute allowedRoles={['RECEPTIONIST', 'ADMIN']}>
+                  <LiveQueuePage />
                 </ProtectedRoute>
               }
             />

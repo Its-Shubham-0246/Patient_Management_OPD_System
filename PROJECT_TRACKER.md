@@ -3,8 +3,8 @@
 > **Document ID:** PROJECT_TRACKER.md  
 > **System Scope:** Outpatient Department (OPD) Management Platform for a Single Clinic  
 > **Current Stage:** Stage B – Application Implementation  
-> **Active Phase:** PHASE 7 – OPD Queue  
-> **Last Updated:** 2026-11-11  
+> **Active Phase:** PHASE 8 – Doctor Consultation  
+> **Last Updated:** 2026-11-12  
 > **Repository Structure:** `frontend/`, `backend/`, `docs/`, `README.md`, `PROJECT_TRACKER.md`, `.gitignore`  
 
 ---
@@ -16,7 +16,7 @@
 | **Product Name** | Smart OPD (Single Clinic Digital Healthcare Platform) | Configurable clinic branding, working hours & fees |
 | **Stage A Status** | **100% COMPLETE & AUDITED** | All 15 master documents approved and harmonized |
 | **Stage B Target** | **15 Implementation Phases** | Full working MERN application with zero mock dependency |
-| **Current Focus** | **Phase 7: OPD Queue** | Token generation, check-in trigger, live Socket.IO queue, waiting status, in-consultation status, completed status, estimated waiting time, 4K TV display board with audio chime |
+| **Current Focus** | **Phase 8: Doctor Consultation** | Today's appointments, waiting patients, patient longitudinal EMR, consultation notes, vitals with BMI auto-calc, diagnosis (ICD-10), treatment plan, digital prescriptions |
 | **Primary Tech Stack** | React 18, Vite, TypeScript, Tailwind CSS, Node.js 20/24, Express, MongoDB 8, Socket.IO | Production-grade single-clinic architecture |
 
 ---
@@ -31,8 +31,8 @@
 | **04** | **Patient Management** | **COMPLETED** | Patient registration, unique UHID generator (`OPD-YYMM-XXXXX`), debounced indexed search (`Alt+C`), patient medical profiles, allergies & substance alerts, chronic conditions timeline, diagnostic reports vault. |
 | **05** | **Admin & Receptionist Dashboards** | **COMPLETED** | Today's operational summary, patient & appointment KPIs, quick patient registration modal (`Alt+N`), quick booking modal, live active consulting room telemetry, arrival check-in and token issuance. |
 | **06** | **Appointment Scheduling** | **COMPLETED** | Doctor availability engine, discrete slot calculation, online booking, receptionist booking, follow-up booking, walk-in appointments, reschedule/cancel, double-booking prevention (ACID compound index & app validation). |
-| **07** | **OPD Queue** | **UP NEXT** | Check-in trigger, daily sequential token generation (Token #1, #2... per doctor), live Socket.IO queue, waiting/called/in-consultation/completed/skipped states, 4K TV display board with audio chime. |
-| **08** | **Doctor Consultation** | PENDING | Daily schedule roster, waiting patients list, patient longitudinal EMR, chief complaints, vitals with BMI, diagnosis with ICD-10, treatment plan, digital prescription builder. |
+| **07** | **OPD Queue** | **COMPLETED** | Check-in trigger, daily sequential token generation (Token #1, #2... per doctor), live Socket.IO queue, waiting/called/in-consultation/completed/skipped states, emergency priority promotion, dynamic wait time estimation, 4K TV display board with DPDP Act name masking (`RAHUL M.`) and dual-tone audio chime (D5->A5). |
+| **08** | **Doctor Consultation** | **IN PROGRESS** | Daily schedule roster, waiting patients list, patient longitudinal EMR, chief complaints, vitals with BMI, diagnosis with ICD-10, treatment plan, digital prescription builder. |
 | **09** | **Medical Records** | PENDING | Prescription history (write-once immutable), medical reports vault, diagnostic uploads, visit timeline, follow-up history. |
 | **10** | **Billing** | PENDING | Consultation charges, itemized invoice generation, payment recording (Cash, Static UPI QR, Card), discounts with Admin PIN permission, daily collections report. |
 | **11** | **Notifications** | PENDING | Appointment confirmations, reminders, cancellation alerts, follow-up alerts, email (Nodemailer) and SMS integration ready. |
@@ -207,3 +207,74 @@
 - [x] Verify frontend build (`npm run build --prefix frontend` -> 0 errors in 16.04s).
 - [x] Run live integration test against local MongoDB:
   - Booking -> Double-booking rejection (HTTP 409) -> Rescheduling -> Calendar query -> Auto-allocated booking -> Cancellation.
+
+### Phase 7 Task Checklist: OPD Queue
+- [x] Create Queue and Visit Models:
+  - `backend/src/models/Visit.ts`: Clinic visit lifecycle (checkInTime, consultationStartTime, consultationEndTime, visitType, status: WAITING/IN_CONSULTATION/COMPLETED/CANCELLED).
+  - `backend/src/models/QueueEntry.ts`: Sequential daily token tracking per doctor, status (WAITING, CALLED, IN_CONSULTATION, COMPLETED, SKIPPED), priorityOrder (Emergency=1, Normal=100), callCount, calledAt.
+- [x] Build Queue Controller (`backend/src/controllers/queueController.ts`) and Routes (`backend/src/routes/queueRoutes.ts`):
+  - `GET /api/v1/queue/display`: Public 4K waiting lounge display endpoint with DPDP Act 2023 compliant patient privacy masking (`maskPatientName`: "Rahul Mehta" -> "RAHUL M.").
+  - `GET /api/v1/queue/:doctorId` and `GET /api/v1/queue/doctor/:doctorId`: Doctor-specific queue with dynamic waiting time computation based on doctor's `averageConsultationMinutes`.
+  - `POST /api/v1/queue/checkin`: Ingress check-in generating daily sequential token, atomic visit creation, duplicate check-in guard (409 Conflict).
+  - `PUT /api/v1/queue/:entryId/call-next`: Call next token, increments callCount, broadcasts `queue:called` event with room and token data.
+  - `PUT /api/v1/queue/:entryId/start`: Transitions queue and visit to `IN_CONSULTATION`.
+  - `PUT /api/v1/queue/:entryId/complete`: Transitions queue, visit, and linked appointment to `COMPLETED`.
+  - `PUT /api/v1/queue/:entryId/skip`: Marks patient skipped (no-show after calls).
+  - `PUT /api/v1/queue/:entryId/recall`: Recalls skipped patient back into active waiting queue.
+  - `PUT /api/v1/queue/:entryId/emergency`: Elevates patient to Priority 1 (top of queue) with `queue:emergency` broadcast.
+- [x] Build Frontend Queue Service (`frontend/src/services/queueService.ts`):
+  - Full TypeScript types and REST client bindings for all queue transitions.
+- [x] Build Live OPD Queue Operational Page (`frontend/src/pages/queue/LiveQueuePage.tsx`):
+  - Real-time counters (Waiting, Serving, Completed, Emergency, Skipped).
+  - Doctor selector filter.
+  - Active queue table with Token badge, UHID, Patient Demographics, Allergy tags, Estimated Wait, Call, Start, Complete, Skip, Emergency buttons.
+- [x] Upgrade 4K Waiting Room TV Display (`frontend/src/pages/WaitingRoomDisplay.tsx`):
+  - Live auto-refresh polling with fallback.
+  - Web Audio API dual-tone chime synthesizer (D5 -> A5 frequency slide) when new token is called.
+  - DPDP Act compliant masked patient display (`RAHUL M.`).
+  - Upcoming token carousel and active consultation rooms.
+- [x] Mount routes in `frontend/src/App.tsx`:
+  - `/admin/queue`, `/reception/queue`, `/queue` (Public Waiting Display).
+- [x] Verify backend build (`npm run build --prefix backend` -> 0 errors).
+- [x] Verify frontend build (`npm run build --prefix frontend` -> 0 errors in 19.51s).
+- [x] Execute automated end-to-end integration test (`node backend/test_phase7.mjs`):
+  - Checked in patient -> Token generated.
+  - Duplicate checkin blocked with 409 Conflict.
+  - Doctor queue queried with dynamic estimated wait time.
+  - Doctor called token -> Status CALLED, CallCount 1.
+  - Public display verified with DPDP masking ("RAMESHWAR K.").
+  - Started consultation -> IN_CONSULTATION.
+  - Completed consultation -> COMPLETED.
+  - Emergency patient checked in -> Priority 1.
+
+### Phase 8 Task Checklist: Doctor Consultation
+- [ ] Create Prescription Model (`backend/src/models/Prescription.ts`):
+  - Linkages: clinicId, patientId, doctorId, appointmentId, visitId.
+  - Vitals: bpSystolic, bpDiastolic, pulseRate, temperatureF, respiratoryRate, spo2Percent, weightKg, heightCm, bmi (auto-computed).
+  - Clinical examination & notes: chiefComplaints array (complaint, duration, severity), clinicalObservations, pastHistoryNotes.
+  - Diagnosis: provisionalDiagnosis, finalDiagnosis, icd10Codes array (code, description).
+  - Rx Medications: drugName, genericName, form (Tablet, Syrup, Capsule, Injection, Drops, Ointment), dosageStrength, frequency (e.g. 1-0-1, 1-0-0, 0-0-1, 1-1-1, SOS), durationDays, foodTiming (BEFORE_FOOD, AFTER_FOOD, WITH_FOOD, EMPTY_STOMACH), specialInstructions.
+  - Investigations ordered: labTests array, radiologyTests array.
+  - Advice & Lifestyle: generalAdvice, dietaryRestrictions.
+  - Follow-up: followUpDays, followUpDate, urgentSosWarning.
+  - Digital signature / verification: doctorRegNumber, signedAt, isDraft.
+- [ ] Build Consultation & Prescription Controller (`backend/src/controllers/prescriptionController.ts`) & Routes:
+  - `GET /api/v1/prescriptions/patient/:patientId`: Patient prescription history.
+  - `GET /api/v1/prescriptions/:id`: Single prescription details.
+  - `POST /api/v1/prescriptions`: Save draft or complete prescription.
+  - `PUT /api/v1/prescriptions/:id`: Update draft prescription.
+  - `POST /api/v1/prescriptions/:id/finalize`: Finalize and sign prescription (write-once lock, auto-updates visit to COMPLETED).
+- [ ] Create Doctor Consultation Workspace (`frontend/src/pages/doctor/DoctorWorkspacePage.tsx`):
+  - Split-view ergonomic layout:
+    - Left column: Today's Waiting Queue & Active Patient Selector.
+    - Middle/Right column: Active Patient Banner with red allergy alerts, longitudinal EMR tabs (Past Visits, Lab Reports, Prescriptions), and Consultation / Rx Builder.
+  - Interactive Digital Rx Builder:
+    - Vitals input card with instant BMI calculation ($weight / (height/100)^2$) and classification (Underweight, Normal, Overweight, Obese).
+    - Chief complaints chip list with duration.
+    - ICD-10 Diagnosis search & select.
+    - Fast Medication Entry table: Drug autocomplete/suggestions, Form, Strength, Frequency (1-0-1 pills), Food Timing pills, Duration, Instructions.
+    - Ordered Investigations & Advice.
+    - Follow-up date picker / quick +7, +14, +30 day buttons.
+    - 1-click "Finalize & Print Prescription" generating clean clinical Rx letterhead slip.
+- [ ] Mount `/doctor/workspace` in `frontend/src/App.tsx`.
+- [ ] Verify TypeScript builds and run integration test against live backend & MongoDB.
