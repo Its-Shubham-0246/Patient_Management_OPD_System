@@ -3,7 +3,7 @@
 > **Document ID:** PROJECT_TRACKER.md  
 > **System Scope:** Outpatient Department (OPD) Management Platform for a Single Clinic  
 > **Current Stage:** Stage B – Application Implementation  
-> **Active Phase:** PHASE 5 – Admin and Receptionist Dashboards  
+> **Active Phase:** PHASE 6 – Appointment Scheduling  
 > **Last Updated:** 2026-11-11  
 > **Repository Structure:** `frontend/`, `backend/`, `docs/`, `README.md`, `PROJECT_TRACKER.md`, `.gitignore`  
 
@@ -16,7 +16,7 @@
 | **Product Name** | Smart OPD (Single Clinic Digital Healthcare Platform) | Configurable clinic branding, working hours & fees |
 | **Stage A Status** | **100% COMPLETE & AUDITED** | All 15 master documents approved and harmonized |
 | **Stage B Target** | **15 Implementation Phases** | Full working MERN application with zero mock dependency |
-| **Current Focus** | **Phase 5: Admin & Receptionist Dashboards** | Today's operational summary, patient & appointment KPIs, quick registration drawer (`Alt+N`), quick booking widget, live room monitor |
+| **Current Focus** | **Phase 6: Appointment Scheduling** | Doctor availability engine, discrete slot calculation, online booking, receptionist booking, follow-up booking, walk-in appointments, reschedule/cancel, double-booking prevention (ACID txn) |
 | **Primary Tech Stack** | React 18, Vite, TypeScript, Tailwind CSS, Node.js 20/24, Express, MongoDB 8, Socket.IO | Production-grade single-clinic architecture |
 
 ---
@@ -29,8 +29,8 @@
 | **02** | **Authentication** | **COMPLETED** | Login, logout, bcrypt hashing (cost 12), JWT 15m access + 7d rotated httpOnly refresh tokens, user registration, role guards (Admin, Doctor, Receptionist, Patient), brute-force lockout (5 attempts / 30 mins), seed endpoint (`POST /auth/seed`). |
 | **03** | **Clinic Administration** | **COMPLETED** | Clinic profile & master settings (`clinicSettings`), statutory Clinical Establishments Act registry, doctor directory CRUD, weekly shift roster matrix, leave tracking & approvals, staff/receptionist management, holiday calendar. |
 | **04** | **Patient Management** | **COMPLETED** | Patient registration, unique UHID generator (`OPD-YYMM-XXXXX`), debounced indexed search (`Alt+C`), patient medical profiles, allergies & substance alerts, chronic conditions timeline, diagnostic reports vault. |
-| **05** | **Admin & Receptionist Dashboards** | **UP NEXT** | Today's operational summary, patient & appointment KPIs, quick patient registration drawer (`Alt+N`), quick booking widget, live room monitor. |
-| **06** | **Appointment Scheduling** | PENDING | Doctor availability engine, discrete slot calculation, online booking, receptionist booking, follow-up booking, walk-in appointments, reschedule/cancel, double-booking prevention (ACID txn). |
+| **05** | **Admin & Receptionist Dashboards** | **COMPLETED** | Today's operational summary, patient & appointment KPIs, quick patient registration modal (`Alt+N`), quick booking modal, live active consulting room telemetry, arrival check-in and token issuance. |
+| **06** | **Appointment Scheduling** | **UP NEXT** | Doctor availability engine, discrete slot calculation, online booking, receptionist booking, follow-up booking, walk-in appointments, reschedule/cancel, double-booking prevention (ACID txn). |
 | **07** | **OPD Queue** | PENDING | Check-in trigger, daily sequential token generation (Token #1, #2... per doctor), live Socket.IO queue, waiting/called/in-consultation/completed/skipped states, 4K TV display board with audio chime. |
 | **08** | **Doctor Consultation** | PENDING | Daily schedule roster, waiting patients list, patient longitudinal EMR, chief complaints, vitals with BMI, diagnosis with ICD-10, treatment plan, digital prescription builder. |
 | **09** | **Medical Records** | PENDING | Prescription history (write-once immutable), medical reports vault, diagnostic uploads, visit timeline, follow-up history. |
@@ -138,3 +138,38 @@
 - [x] Mount routes in `App.tsx` (`/reception/patients`, `/doctor/patients`, `/patients/:id`, `/doctor/patients/:id`).
 - [x] Verify backend build (`npm run build --prefix backend` -> 0 errors) and live database API operations.
 - [x] Verify frontend build (`npm run build --prefix frontend` -> 0 errors in 6.01s).
+
+### Phase 5 Task Checklist: Admin and Receptionist Dashboards
+- [x] Design and implement `Appointment` model (`backend/src/models/Appointment.ts`):
+  - Fields for clinicId, patientId, doctorId, appointmentDate, timeSlot, slotDurationMinutes, bookingChannel, status, cancellationReason, tokenNumber, allocationDetails.
+  - Unique index constraint on `{ doctorId, appointmentDate, timeSlot }` with partialFilterExpression excluding cancelled appointments.
+- [x] Build Dashboard Telemetry Controller (`backend/src/controllers/dashboardController.ts`):
+  - Aggregates live today's KPIs: total patients, today new patients, today bookings, checked-in count, completed count, active doctors count, estimated consultation revenue.
+  - Computes doctor workload and active waiting lounge counts per clinician.
+  - Feeds `/api/v1/analytics/dashboard` endpoint.
+- [x] Build Appointments Controller (`backend/src/controllers/appointmentController.ts`):
+  - `getAppointments`: date, doctor, patient, status filters with population.
+  - `createAppointment`: double-booking protection, token issuance for walk-ins.
+  - `updateAppointmentStatus`: status changes and sequential daily token generation on check-in.
+  - `getAvailableSlots`: discrete slot generation based on doctor shift schedules and leave blocks.
+  - `autoAllocateDoctor`: calculates $W_i$ workload scores and recommends optimal specialist.
+- [x] Create Frontend Client Service (`frontend/src/services/appointmentService.ts`).
+- [x] Create Quick Appointment Booking Modal (`frontend/src/components/dashboard/QuickBookingModal.tsx`):
+  - Patient autocomplete search.
+  - Physician selection with Smart OPD Auto-Allocation recommendation ($W_i$ score).
+  - Discrete available time slot picker.
+  - Walk-in / phone booking flow options.
+- [x] Create Quick Patient Registration Modal (`frontend/src/components/dashboard/QuickPatientModal.tsx`):
+  - Global `Alt+N` shortcut listener.
+  - Immediate UHID generation with copy button and option to book appointment directly.
+- [x] Upgrade Admin Operational Cockpit (`frontend/src/pages/AdminDashboard.tsx`):
+  - Live StatCards (Today Bookings, Ingress Checked-In, Registered Patients, Estimated Revenue).
+  - Attending Physicians & Consulting Room Telemetry table.
+  - Today's Outpatient Appointments queue view.
+- [x] Upgrade Front-Desk Reception Console (`frontend/src/pages/ReceptionDashboard.tsx`):
+  - Smart Specialist Auto-Allocation recommendation ingress banner.
+  - Status filter tabs (All, Pre-Booked, In Queue, Completed).
+  - Arrival 1-click Check-In button generating daily queue token.
+  - Print Ingress Slip dialog.
+- [x] Verify backend build (`npm run build --prefix backend` -> 0 errors) and live database API operations.
+- [x] Verify frontend build (`npm run build --prefix frontend` -> 0 errors in 13.60s).

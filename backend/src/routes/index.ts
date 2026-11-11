@@ -5,6 +5,8 @@ import clinicRoutes from './clinicRoutes.js';
 import doctorRoutes from './doctorRoutes.js';
 import staffRoutes from './staffRoutes.js';
 import patientRoutes from './patientRoutes.js';
+import appointmentRoutes from './appointmentRoutes.js';
+import analyticsRoutes from './analyticsRoutes.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 
 const router = Router();
@@ -16,6 +18,8 @@ router.use('/clinic', clinicRoutes);
 router.use('/doctors', doctorRoutes);
 router.use('/staff', staffRoutes);
 router.use('/patients', patientRoutes);
+router.use('/appointments', appointmentRoutes);
+router.use('/analytics', analyticsRoutes);
 
 // Root API v1 info
 router.get('/', (req, res) => {
