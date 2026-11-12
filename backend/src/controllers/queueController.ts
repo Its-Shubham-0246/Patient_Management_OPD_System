@@ -404,3 +404,4 @@ export const markEmergency = async (req: AuthenticatedRequest, res: Response, ne
     next(error);
   }
 };
+

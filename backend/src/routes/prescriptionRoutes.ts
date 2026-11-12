@@ -30,3 +30,4 @@ router.post('/:visitId', authenticate, restrictTo('DOCTOR', 'ADMIN'), savePrescr
 router.get('/:id', authenticate, getPrescriptionById);
 
 export default router;
+

@@ -116,3 +116,4 @@ export const markEmergency = async (entryId: string): Promise<QueueEntryData> =>
   const res = await apiClient.put(`/queue/${entryId}/emergency`);
   return res.data.data;
 };
+

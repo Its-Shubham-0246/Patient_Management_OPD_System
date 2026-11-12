@@ -14,6 +14,7 @@ import { PatientDirectoryPage } from './pages/reception/PatientDirectoryPage';
 import { PatientProfilePage } from './pages/patient/PatientProfilePage';
 import { DoctorDashboard } from './pages/DoctorDashboard';
 import { DoctorWorkspacePage } from './pages/doctor/DoctorWorkspacePage';
+import { MedicalRecordsPage } from './pages/patient/MedicalRecordsPage';
 import { ReceptionDashboard } from './pages/ReceptionDashboard';
 import { AppointmentSchedulingPage } from './pages/appointments/AppointmentSchedulingPage';
 import { BookAppointmentPage } from './pages/patient/BookAppointmentPage';
@@ -148,6 +149,22 @@ export const App: React.FC = () => {
               }
             />
             <Route
+              path="/doctor/records"
+              element={
+                <ProtectedRoute allowedRoles={['DOCTOR', 'ADMIN']}>
+                  <MedicalRecordsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/doctor/records/:id"
+              element={
+                <ProtectedRoute allowedRoles={['DOCTOR', 'ADMIN']}>
+                  <MedicalRecordsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/doctor/*"
               element={
                 <ProtectedRoute allowedRoles={['DOCTOR', 'ADMIN']}>
@@ -187,6 +204,22 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute allowedRoles={['RECEPTIONIST', 'ADMIN']}>
                   <PatientDirectoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reception/records"
+              element={
+                <ProtectedRoute allowedRoles={['RECEPTIONIST', 'ADMIN']}>
+                  <MedicalRecordsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reception/records/:id"
+              element={
+                <ProtectedRoute allowedRoles={['RECEPTIONIST', 'ADMIN']}>
+                  <MedicalRecordsPage />
                 </ProtectedRoute>
               }
             />
@@ -232,6 +265,30 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute allowedRoles={['PATIENT', 'ADMIN']}>
                   <BookAppointmentPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/portal/records"
+              element={
+                <ProtectedRoute allowedRoles={['PATIENT', 'ADMIN']}>
+                  <MedicalRecordsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/portal/prescriptions"
+              element={
+                <ProtectedRoute allowedRoles={['PATIENT', 'ADMIN']}>
+                  <MedicalRecordsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/portal/reports"
+              element={
+                <ProtectedRoute allowedRoles={['PATIENT', 'ADMIN']}>
+                  <MedicalRecordsPage />
                 </ProtectedRoute>
               }
             />

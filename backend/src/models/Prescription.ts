@@ -112,3 +112,4 @@ PrescriptionSchema.index({ clinicId: 1, patientId: 1, prescriptionDate: -1 });
 PrescriptionSchema.index({ clinicId: 1, doctorId: 1, prescriptionDate: -1 });
 
 export const Prescription = mongoose.model<IPrescription>('Prescription', PrescriptionSchema);
+

@@ -30,14 +30,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, isCollapsed = fal
         return [
           { to: '/doctor/workspace', label: 'Consultation Room', icon: Stethoscope },
           { to: '/doctor/appointments', label: "Today's Schedule", icon: Calendar },
-          { to: '/doctor/patients', label: 'Patient Medical History', icon: Users },
-          { to: '/doctor/prescriptions', label: 'Signed Prescriptions', icon: FileText },
+          { to: '/doctor/patients', label: 'Patient Directory', icon: Users },
+          { to: '/doctor/records', label: 'Medical Records & EMR', icon: FolderOpen },
         ];
       case 'RECEPTIONIST':
         return [
           { to: '/reception/dashboard', label: 'Ingress & Check-In', icon: UserCheck },
           { to: '/reception/queue', label: 'Live Token Queue', icon: ListOrdered },
           { to: '/reception/appointments', label: 'Appointment Booking', icon: Calendar },
+          { to: '/reception/records', label: 'Diagnostic Vault', icon: FolderOpen },
           { to: '/reception/billing', label: 'Cashier & Settlement', icon: CreditCard },
           { to: '/reception/patients', label: 'Patient Directory', icon: Users },
         ];

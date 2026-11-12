@@ -299,3 +299,4 @@ export const getDoctorTodayPrescriptions = async (req: AuthenticatedRequest, res
     next(error);
   }
 };
+

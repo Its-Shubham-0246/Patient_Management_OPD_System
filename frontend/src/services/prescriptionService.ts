@@ -95,3 +95,4 @@ export const getDoctorTodayPrescriptions = async (doctorId?: string): Promise<Pr
   });
   return res.data.data;
 };
+
