@@ -3,7 +3,7 @@
 > **Document ID:** PROJECT_TRACKER.md  
 > **System Scope:** Outpatient Department (OPD) Management Platform for a Single Clinic  
 > **Current Stage:** Stage B – Application Implementation  
-> **Active Phase:** PHASE 11 – Notifications  
+> **Active Phase:** PHASE 12 – Patient Portal  
 > **Last Updated:** 2026-11-14  
 > **Repository Structure:** `frontend/`, `backend/`, `docs/`, `README.md`, `PROJECT_TRACKER.md`, `.gitignore`  
 
@@ -16,7 +16,7 @@
 | **Product Name** | Smart OPD (Single Clinic Digital Healthcare Platform) | Configurable clinic branding, working hours & fees |
 | **Stage A Status** | **100% COMPLETE & AUDITED** | All 15 master documents approved and harmonized |
 | **Stage B Target** | **15 Implementation Phases** | Full working MERN application with zero mock dependency |
-| **Current Focus** | **Phase 11: Notifications** | DLT SMS templates (Booking confirmation, Token call, Follow-up alert, Cancellation), Nodemailer HTML email notifications, in-app notification center |
+| **Current Focus** | **Phase 12: Patient Portal** | Patient self-service registration, appointment booking wizard, live token tracker, downloadable digital prescriptions and payment receipts |
 | **Primary Tech Stack** | React 18, Vite, TypeScript, Tailwind CSS, Node.js 20/24, Express, MongoDB 8, Socket.IO | Production-grade single-clinic architecture |
 
 ---
@@ -35,9 +35,8 @@
 | **08** | **Doctor Consultation** | **COMPLETED** | Daily schedule roster, waiting patients list, patient longitudinal EMR, chief complaints, vitals with BMI auto-calc, diagnosis with ICD-10, treatment plan, digital prescription builder (`RX-YYMM-XXXXX`), official printable A4 prescription letterhead, digital signature block. |
 | **09** | **Medical Records** | **COMPLETED** | Prescription history, diagnostic report uploads with DISHA 7-year retention tracking, unified longitudinal patient timeline (`/records/patient/:id/timeline`), report soft-deletion, and follow-up scheduling. |
 | **10** | **Billing** | **COMPLETED** | Itemized invoice generation (`INV-YYMM-XXXXX`), partial/full payment recording (Cash, Static UPI QR, Card), sequential receipts (`RCPT-YYMM-XXXXX`), Admin PIN discount authorization guard (HTTP 403 on invalid PIN), daily collection report, printable GST/CEA tax invoice and thermal slip. |
-| **11** | **Notifications** | **IN PROGRESS** | Appointment confirmations, reminders, cancellation alerts, follow-up alerts, email (Nodemailer) and SMS integration ready. |
-| **11** | **Notifications** | PENDING | Appointment confirmations, reminders, cancellation alerts, follow-up alerts, email (Nodemailer) and SMS integration ready. |
-| **12** | **Patient Portal** | PENDING | Patient self-service login, appointment booking (auto-alloc or choice), live token status tracker, downloadable PDF prescriptions and receipts, medical records viewer. |
+| **11** | **Notifications** | **COMPLETED** | Multi-channel notification engine (In-App, Nodemailer SMTP Email, TRAI DLT Compliant SMS), 7 pre-registered DLT templates (Header: `SMROPD`), DPDP Act 2023 legal footers, live header bell with unread popover dropdown, interactive Notification Center and DLT telecommunications sandbox. Verified via 30/30 automated checkpoints. |
+| **12** | **Patient Portal** | **IN PROGRESS** | Patient self-service login, appointment booking (auto-alloc or choice), live token status tracker, downloadable PDF prescriptions and receipts, medical records viewer. |
 | **13** | **Analytics** | PENDING | Recharts executive dashboards: daily patient footfall, new vs returning ratio, doctor-wise volume, average wait time, revenue trends, cancellation statistics. |
 | **14** | **Advanced Features** | PENDING | Non-autonomous AI clinical co-pilot (EMR summarization, dictation structuring, preliminary intake tags), mandatory Human-in-the-Loop review, smart operational recommendations. |
 | **15** | **Quality and Deployment** | PENDING | Full test suites (Unit, Integration, E2E), security testing, RBAC testing, error handling, backup scripts, production deployment configuration, final report. |
@@ -380,23 +379,79 @@
   - Voided unpaid invoice -> Status transitioned to `void`.
 
 ### Phase 11 Task Checklist: Notifications
-- [ ] Create Notification Model (`backend/src/models/Notification.ts`):
-  - Linkages: clinicId, recipientUserId, patientId.
-  - Channels: SMS, EMAIL, IN_APP, WHATSAPP.
-  - Types: APPOINTMENT_CONFIRMATION, APPOINTMENT_REMINDER, QUEUE_TOKEN_CALLED, FOLLOW_UP_REMINDER, INVOICE_RECEIPT, APPOINTMENT_CANCELLED.
-  - Status: PENDING, SENT, DELIVERED, FAILED.
-  - Metadata: title, body, templateId, externalReference, readAt.
-- [ ] Implement Notification Engine & Email/SMS Service:
-  - `backend/src/services/notificationService.ts`:
-    - Nodemailer SMTP transporter integration (with fallback dev logger).
-    - Indian TRAI DLT approved SMS templates (Booking confirmation, Token alert, Follow-up reminder).
-    - Responsive HTML clinical email templates with clinic branding and direct appointment / portal links.
-- [ ] Build Notification Controller (`backend/src/controllers/notificationController.ts`) & Routes:
-  - `GET /api/v1/notifications`: User notifications with pagination and unread filter.
-  - `PUT /api/v1/notifications/:id/read`: Mark notification as read.
-  - `PUT /api/v1/notifications/read-all`: Mark all as read.
-  - `POST /api/v1/notifications/test-send`: Staff test trigger for email/SMS.
-- [ ] Build Frontend Notification Service & UI components:
-  - Real-time notification bell dropdown in Header (`frontend/src/components/layout/Header.tsx`).
-  - Notification Center Page (`frontend/src/pages/notifications/NotificationCenterPage.tsx`).
-- [ ] Verify TypeScript builds and run integration test against live backend & MongoDB.
+- [x] Create Notification Model (`backend/src/models/Notification.ts`):
+  - Linkages: `clinicId`, `recipientUserId`, `recipientPatientId`, `recipientRole`.
+  - Channels: `IN_APP`, `EMAIL`, `SMS`, `MULTI`.
+  - Types: `APPOINTMENT`, `QUEUE`, `PRESCRIPTION`, `REPORT`, `BILLING`, `SYSTEM`.
+  - Events: `APPT_CONFIRMED`, `APPT_REMINDER_24H`, `APPT_CANCELLED`, `APPT_RESCHEDULED`, `CHECKIN_TOKEN_ISSUED`, `QUEUE_NEXT_CALLED`, `QUEUE_DELAY_ALERT`, `PRESCRIPTION_READY`, `REPORT_UPLOADED`, `FOLLOWUP_REMINDER`, `INVOICE_GENERATED`, `DOCTOR_LEAVE_NOTICE`, `SYSTEM_ALERT`.
+  - Delivery audit logs: array of `{ channel, status, timestamp, messageId, error, dltTemplateId }`.
+  - Status: `PENDING`, `SENT`, `DELIVERED`, `FAILED`.
+  - Read tracking: `isRead`, `readAt`.
+  - Compound indexes for fast unread queries and DPDP 90-day retention minimization.
+- [x] Implement Multi-Channel Notification Engine (`backend/src/services/notificationService.ts`):
+  - Indian TRAI DLT Compliant SMS Engine:
+    - Registered 6-char Header: `SMROPD`.
+    - 7 registered DLT templates: `APPT_CONFIRMED` (`1107168923450012`), `CHECKIN_TOKEN_ISSUED` (`1107168923450013`), `QUEUE_NEXT_CALLED` (`1107168923450014`), `FOLLOWUP_REMINDER` (`1107168923450015`), `DOCTOR_LEAVE_NOTICE` (`1107168923450016`), `INVOICE_GENERATED` (`1107168923450017`), `PRESCRIPTION_READY` (`1107168923450018`).
+    - DLT variable sanitizer stripping control chars (`\n`, `\t`, `<>`) and keeping GSM messages <= 160 chars.
+    - Transactional SMS gateway logger with message ID generation.
+  - Responsive Healthcare HTML Email Generator:
+    - Medical deep navy (`#1e2d4a`), clinical blue (`#3b82f6`), and light slate container.
+    - Standard header with clinic logo, emergency hotline (`108`), content card, CTA button.
+    - Statutory DPDP Act 2023 legal footer with clinic address and confidentiality disclaimer.
+    - Nodemailer SMTP transporter with fallback development json logger.
+  - Socket.IO Real-Time Engine:
+    - Dispatches to personal rooms (`user:${recipientUserId}`), role rooms (`role:${recipientRole}`), and clinic room (`clinic:${clinicId}`).
+  - Clinical Trigger Facades:
+    - `notifyAppointmentConfirmed`: auto-invoked when appointment is booked.
+    - `notifyQueueTokenIssued`: auto-invoked on reception check-in.
+    - `notifyQueueCalled`: auto-invoked on doctor "Call Next".
+    - `notifyPrescriptionReady`: auto-invoked on doctor prescription finalization.
+    - `notifyInvoiceGenerated`: auto-invoked on billing cashier settlement.
+    - `notifyFollowUpReminder`: auto-invoked on follow-up scheduling.
+- [x] Build Notification Controller (`backend/src/controllers/notificationController.ts`) & Routes (`backend/src/routes/notificationRoutes.ts`):
+  - `GET /api/v1/notifications`: Paginated notifications with role, type, channel, and unread filters.
+  - `GET /api/v1/notifications/unread-count`: Fast unread badge counter.
+  - `GET /api/v1/notifications/templates`: Metadata list of all registered TRAI DLT templates.
+  - `PUT /api/v1/notifications/:id/read`: Mark individual notification as read with timestamp.
+  - `PUT /api/v1/notifications/read-all`: Mark all notifications as read for current user/clinic scope.
+  - `POST /api/v1/notifications/send`: Staff manual broadcast alert.
+  - `POST /api/v1/notifications/test-template`: Live DLT GSM character counter and email preview sandbox.
+  - `DELETE /api/v1/notifications/:id`: Delete alert.
+- [x] Build Frontend Notification Service & UI Components:
+  - `frontend/src/services/notificationService.ts`: Full TypeScript API client bindings.
+  - Header Bell Popover Dropdown (`frontend/src/components/layout/Header.tsx`):
+    - Live unread badge count with pulse animation.
+    - Popover dropdown showing recent alerts, category icons, relative timestamps ("Just now", "5m ago").
+    - Direct "Mark all read" button.
+    - 1-click navigation to linked action URLs (`/portal/token`, `/portal/dashboard`, etc.).
+  - Notification Center Page (`frontend/src/pages/notifications/NotificationCenterPage.tsx`):
+    - Metrics summary (Total Dispatched, Unread Alerts, SMS Header `SMROPD`, SMTP Status).
+    - Category filter tabs (All, Unread, Appointments, Live Queue, e-Prescriptions, Billing, System).
+    - Search bar and auto-refresh.
+    - Expandable telecommunications dispatch audit log (channel, status, timestamp, DLT Template ID, Message ID).
+    - Interactive DLT Testing & Dispatch Sandbox Modal with live 160-char GSM counter and simulated transmission.
+  - Integrated into `App.tsx` (`/notifications`, `/admin/notifications`, `/reception/notifications`, `/doctor/notifications`) and `Sidebar.tsx`.
+- [x] Verify backend build (`npm run build --prefix backend` -> 0 errors).
+- [x] Verify frontend build (`npm run build --prefix frontend` -> 0 errors in 10.10s).
+- [x] Execute automated end-to-end integration test (`node backend/test_phase11.mjs`):
+  - 30 / 30 checkpoints passed with exit code 0.
+
+---
+
+### Phase 12 Task Checklist: Patient Portal
+- [ ] Build Patient Portal Dashboard (`frontend/src/pages/PatientPortal.tsx`):
+  - Welcome banner with patient UHID, age, gender, blood group, allergies alert banner.
+  - Today's appointment and active token card with live queue position indicator.
+  - Quick action shortcuts: "Book New Consultation", "View Live Queue Token", "My Prescriptions", "Lab Reports", "Invoices & Receipts".
+- [ ] Build Patient Live Token Tracker (`frontend/src/pages/patient/LiveTokenTrackerPage.tsx`):
+  - Real-time token status (WAITING, CALLED, IN_CONSULTATION, COMPLETED).
+  - Estimated wait time countdown in minutes.
+  - Room number and doctor name display.
+- [ ] Enhance Patient Prescriptions Viewer with direct PDF download:
+  - List of finalized prescriptions with date, doctor, chief diagnosis.
+  - Printable official prescription letterhead.
+- [ ] Enhance Patient Billing & Receipts Viewer:
+  - Invoices and payment receipts list with total paid, balance, status.
+  - Printable official money receipt slip.
+- [ ] Mount routes in `frontend/src/App.tsx` and verify role permissions for PATIENT and ADMIN.
+- [ ] Run automated end-to-end integration test (`backend/test_phase12.mjs`) and verify builds.

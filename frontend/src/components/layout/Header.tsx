@@ -1,20 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Bell,
   Search,
   Activity,
   Globe,
-  User as UserIcon,
   LogOut,
   Tv,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Calendar,
+  Clock,
+  FileText,
+  CreditCard,
+  Info,
+  Check,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { checkHealth } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import {
+  getNotifications,
+  getUnreadCount,
+  markAsRead,
+  markAllAsRead,
+  INotification
+} from '../../services/notificationService';
 
 export interface HeaderProps {
   currentRole?: string;
@@ -23,14 +36,18 @@ export interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  currentRole = 'ADMIN',
-  onRoleChange,
   onQuickSearchClick
 }) => {
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
   const [lang, setLang] = useState<'EN' | 'HI'>('EN');
   const [apiOnline, setApiOnline] = useState<boolean | null>(null);
+
+  // Notification state
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [recentNotifications, setRecentNotifications] = useState<INotification[]>([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     checkHealth()
@@ -40,9 +57,97 @@ export const Header: React.FC<HeaderProps> = ({
       .catch(() => setApiOnline(false));
   }, []);
 
+  // Fetch unread count & recent notifications
+  const fetchNotificationData = async () => {
+    if (!isAuthenticated) return;
+    try {
+      const [count, listRes] = await Promise.all([
+        getUnreadCount(),
+        getNotifications({ limit: 5 })
+      ]);
+      setUnreadCount(count);
+      setRecentNotifications(listRes?.notifications || []);
+    } catch (err) {
+      // Silently catch in header
+    }
+  };
+
+  useEffect(() => {
+    fetchNotificationData();
+    const interval = setInterval(fetchNotificationData, 15000); // Poll every 15s
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
+  // Handle clicking outside of notification popover
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
   const handleLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllAsRead();
+      setUnreadCount(0);
+      setRecentNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleNotificationClick = async (notif: INotification) => {
+    try {
+      if (!notif.isRead) {
+        await markAsRead(notif._id);
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+        setRecentNotifications((prev) =>
+          prev.map((n) => (n._id === notif._id ? { ...n, isRead: true } : n))
+        );
+      }
+      setIsDropdownOpen(false);
+      if (notif.actionUrl) {
+        navigate(notif.actionUrl);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'APPOINTMENT':
+        return <Calendar className="h-4 w-4 text-blue-500" />;
+      case 'QUEUE':
+        return <Clock className="h-4 w-4 text-amber-500" />;
+      case 'PRESCRIPTION':
+        return <FileText className="h-4 w-4 text-emerald-500" />;
+      case 'BILLING':
+        return <CreditCard className="h-4 w-4 text-indigo-500" />;
+      default:
+        return <Info className="h-4 w-4 text-slate-500" />;
+    }
+  };
+
+  const formatRelativeTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const diff = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
   };
 
   const clinicName = import.meta.env.VITE_DEFAULT_CLINIC_NAME || 'City Health Care Clinic';
@@ -80,7 +185,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
       </div>
 
-      {/* Right: Actions, Backend Health Indicator, Language, User Session */}
+      {/* Right: Actions, Backend Health Indicator, Language, Notifications, User Session */}
       <div className="flex items-center gap-2 md:gap-3">
         {/* Backend API Health Status */}
         <div className="hidden lg:flex items-center gap-1.5 text-xs">
@@ -120,11 +225,113 @@ export const Header: React.FC<HeaderProps> = ({
           <span>{lang === 'EN' ? 'हिंदी' : 'EN'}</span>
         </button>
 
-        {/* Notifications */}
-        <Button variant="ghost" size="sm" className="relative p-2 h-9 w-9 rounded-full text-slate-600">
-          <Bell className="h-4 w-4" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-600 ring-2 ring-white"></span>
-        </Button>
+        {/* Notifications Bell with Popover Dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => {
+              setIsDropdownOpen(!isDropdownOpen);
+              if (!isDropdownOpen) fetchNotificationData();
+            }}
+            className="relative p-2 h-9 w-9 rounded-full text-slate-600 hover:bg-slate-100 transition-colors flex items-center justify-center focus:outline-none"
+            title="Notifications"
+            aria-label="Open notifications"
+          >
+            <Bell className="h-4 w-4" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white animate-pulse">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {/* Notification Popover Dropdown Menu */}
+          {isDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-xl border border-slate-200 bg-white shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 bg-slate-50/80">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-slate-900">Notifications</h3>
+                  {unreadCount > 0 && (
+                    <Badge variant="danger" size="sm">
+                      {unreadCount} new
+                    </Badge>
+                  )}
+                </div>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={handleMarkAllRead}
+                    className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+                  >
+                    <Check className="h-3 w-3" />
+                    <span>Mark all read</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Items List */}
+              <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-100">
+                {recentNotifications.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-400">
+                    <Bell className="h-8 w-8 mx-auto text-slate-300 mb-2" />
+                    No notifications yet
+                  </div>
+                ) : (
+                  recentNotifications.map((notif) => (
+                    <div
+                      key={notif._id}
+                      onClick={() => handleNotificationClick(notif)}
+                      className={`flex items-start gap-3 p-3.5 hover:bg-slate-50 transition-colors cursor-pointer text-left ${
+                        !notif.isRead ? 'bg-blue-50/30' : ''
+                      }`}
+                    >
+                      <div className="mt-0.5 p-1.5 rounded-lg bg-slate-100 border border-slate-200/60 shrink-0">
+                        {getNotificationIcon(notif.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1 mb-0.5">
+                          <p
+                            className={`text-xs truncate ${
+                              !notif.isRead ? 'font-bold text-slate-900' : 'font-medium text-slate-700'
+                            }`}
+                          >
+                            {notif.title}
+                          </p>
+                          <span className="text-[10px] text-slate-400 shrink-0 whitespace-nowrap">
+                            {formatRelativeTime(notif.createdAt)}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                          {notif.message}
+                        </p>
+                        {notif.channel && notif.channel !== 'IN_APP' && (
+                          <div className="mt-1 flex items-center gap-1">
+                            <span className="inline-flex items-center text-[9px] font-semibold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                              {notif.channel}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      {!notif.isRead && (
+                        <div className="h-2 w-2 rounded-full bg-blue-600 shrink-0 mt-1.5" />
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Footer View All */}
+              <div className="border-t border-slate-100 p-2.5 bg-slate-50 text-center">
+                <Link
+                  to="/notifications"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-blue-600 transition-colors w-full py-1"
+                >
+                  <span>View all in Notification Center</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* User Profile & Auth Controls */}
         {isAuthenticated && user ? (
@@ -161,5 +368,3 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
-
-

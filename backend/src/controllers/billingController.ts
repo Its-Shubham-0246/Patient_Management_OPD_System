@@ -9,6 +9,7 @@ import { sendSuccess } from '../utils/apiResponse.js';
 import { AppError } from '../utils/appError.js';
 import { getOrCreateClinic } from './authController.js';
 import { AuthenticatedRequest } from '../middleware/auth.js';
+import { NotificationService } from '../services/notificationService.js';
 
 // Default Clinic Admin Discount Authorization PIN
 const MASTER_ADMIN_DISCOUNT_PIN = process.env.ADMIN_DISCOUNT_PIN || '1234';
@@ -321,6 +322,25 @@ export const recordPayment = async (req: AuthenticatedRequest, res: Response, ne
     const populatedPayment = await Payment.findById(payment._id)
       .populate('receivedBy', 'fullName role')
       .populate('patientId', 'fullName uhid phone');
+
+    // Trigger Notification for Receipt
+    try {
+      const patientObj: any = populatedPayment?.patientId;
+      NotificationService.notifyInvoiceGenerated({
+        clinicId: clinic._id,
+        patientId: patientObj?._id,
+        patientName: patientObj?.fullName || 'Patient',
+        clinicName: clinic.clinicName || 'City Health Care Clinic',
+        invoiceNumber: invoice.invoiceNumber,
+        amount: paymentAmount,
+        status: invoice.status === 'paid' ? 'PAID' : 'PARTIALLY_PAID',
+        phone: patientObj?.phone,
+        email: patientObj?.email,
+        io
+      }).catch((err) => console.error('[Invoice Notification Error]', err));
+    } catch (notifErr) {
+      console.error('[Invoice Notification Failed]', notifErr);
+    }
 
     return sendSuccess(
       res,

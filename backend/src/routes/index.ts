@@ -12,6 +12,7 @@ import medicalRecordRoutes from './medicalRecordRoutes.js';
 import billingRoutes from './billingRoutes.js';
 import paymentRoutes from './paymentRoutes.js';
 import analyticsRoutes from './analyticsRoutes.js';
+import notificationRoutes from './notificationRoutes.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 
 const router = Router();
@@ -33,6 +34,7 @@ router.use('/invoices', billingRoutes);
 router.use('/billing', billingRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/analytics', analyticsRoutes);
+router.use('/notifications', notificationRoutes);
 
 // Root API v1 info
 router.get('/', (req, res) => {
@@ -50,7 +52,8 @@ router.get('/', (req, res) => {
       queue: '/api/v1/queue',
       prescriptions: '/api/v1/prescriptions',
       invoices: '/api/v1/invoices',
-      analytics: '/api/v1/analytics'
+      analytics: '/api/v1/analytics',
+      notifications: '/api/v1/notifications'
     }
   });
 });

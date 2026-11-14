@@ -177,3 +177,4 @@ export const voidInvoice = async (
   const res = await apiClient.post(`/invoices/${invoiceId}/void`, { voidReason });
   return res.data.data;
 };
+

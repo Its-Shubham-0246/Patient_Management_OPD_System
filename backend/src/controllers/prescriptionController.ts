@@ -9,6 +9,7 @@ import { sendSuccess } from '../utils/apiResponse.js';
 import { AppError } from '../utils/appError.js';
 import { getOrCreateClinic } from './authController.js';
 import { AuthenticatedRequest } from '../middleware/auth.js';
+import { NotificationService } from '../services/notificationService.js';
 
 // Auto-generate unique Prescription Number: RX-YYMM-XXXXX
 const generatePrescriptionNumber = async (clinicId: any): Promise<string> => {
@@ -214,6 +215,30 @@ export const savePrescription = async (req: AuthenticatedRequest, res: Response,
       .populate('doctorId', 'fullName specialization medicalRegistrationNumber department qualification roomNumber')
       .populate('clinicId', 'clinicName address phone email logo')
       .populate('visitId');
+
+    // Trigger Notification if finalized
+    if (isFinalized && populated) {
+      try {
+        const patientObj: any = populated.patientId;
+        const doctorObj: any = populated.doctorId;
+        const clinicObj: any = populated.clinicId;
+        const io = req.app.get('io');
+        NotificationService.notifyPrescriptionReady({
+          clinicId: clinicObj?._id || clinic._id,
+          patientId: patientObj?._id,
+          patientName: patientObj?.fullName || 'Patient',
+          doctorName: doctorObj?.fullName || 'Doctor',
+          clinicName: clinicObj?.clinicName || 'City Health Care Clinic',
+          visitRef: (visit._id as any).toString().slice(-6).toUpperCase(),
+          prescriptionId: prescription._id,
+          phone: patientObj?.phone,
+          email: patientObj?.email,
+          io
+        }).catch((err) => console.error('[Prescription Notification Error]', err));
+      } catch (notifErr) {
+        console.error('[Prescription Notification Failed]', notifErr);
+      }
+    }
 
     return sendSuccess(res, populated, isFinalized ? 200 : 201);
   } catch (error) {

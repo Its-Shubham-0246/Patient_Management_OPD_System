@@ -10,6 +10,7 @@ import { sendSuccess } from '../utils/apiResponse.js';
 import { AppError } from '../utils/appError.js';
 import { getOrCreateClinic } from './authController.js';
 import { AuthenticatedRequest } from '../middleware/auth.js';
+import { NotificationService } from '../services/notificationService.js';
 
 // Query Appointments
 export const getAppointments = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -163,6 +164,30 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
     const populated = await Appointment.findById(appointment._id)
       .populate('patientId', 'fullName uhid phone gender age bloodGroup allergies')
       .populate('doctorId', 'fullName specialization roomNumber department consultationFee');
+
+    // Trigger Notification asynchronously
+    try {
+      const patient: any = populated?.patientId;
+      const doctor: any = populated?.doctorId;
+      const io = req.app.get('io');
+      if (patient) {
+        NotificationService.notifyAppointmentConfirmed({
+          clinicId: clinic._id,
+          patientId: patient._id,
+          patientName: patient.fullName || 'Patient',
+          doctorName: doctor?.fullName || 'Doctor',
+          clinicName: clinic.clinicName || 'City Health Care Clinic',
+          date: normalizedDate.toISOString().slice(0, 10),
+          time: validated.timeSlot,
+          appointmentRef: (appointment._id as any).toString().slice(-6).toUpperCase(),
+          phone: patient.phone,
+          email: patient.email,
+          io
+        }).catch((err) => console.error('[Notification Trigger Error]', err));
+      }
+    } catch (notifErr) {
+      console.error('[Notification Appt Failed]', notifErr);
+    }
 
     return sendSuccess(res, populated, 201);
   } catch (error) {
@@ -611,6 +636,30 @@ export const bookAutoAllocatedAppointment = async (req: AuthenticatedRequest, re
     const populated = await Appointment.findById(appointment._id)
       .populate('patientId', 'fullName uhid phone gender age bloodGroup allergies')
       .populate('doctorId', 'fullName specialization roomNumber department consultationFee');
+
+    // Trigger Notification asynchronously
+    try {
+      const patient: any = populated?.patientId;
+      const doctor: any = populated?.doctorId;
+      const io = req.app.get('io');
+      if (patient) {
+        NotificationService.notifyAppointmentConfirmed({
+          clinicId: clinic._id,
+          patientId: patient._id,
+          patientName: patient.fullName || 'Patient',
+          doctorName: doctor?.fullName || 'Doctor',
+          clinicName: clinic.clinicName || 'City Health Care Clinic',
+          date: normalizedDate.toISOString().slice(0, 10),
+          time: slotToBook,
+          appointmentRef: (appointment._id as any).toString().slice(-6).toUpperCase(),
+          phone: patient.phone,
+          email: patient.email,
+          io
+        }).catch((err) => console.error('[Notification Trigger Error]', err));
+      }
+    } catch (notifErr) {
+      console.error('[Notification Appt Failed]', notifErr);
+    }
 
     return sendSuccess(res, populated, 201);
   } catch (error) {

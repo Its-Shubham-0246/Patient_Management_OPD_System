@@ -8,6 +8,7 @@ import { sendSuccess } from '../utils/apiResponse.js';
 import { AppError } from '../utils/appError.js';
 import { getOrCreateClinic } from './authController.js';
 import { AuthenticatedRequest } from '../middleware/auth.js';
+import { NotificationService } from '../services/notificationService.js';
 
 // Helper to mask patient name for DPDP Act privacy compliance on public TV screens: "Rahul Mehta" -> "RAHUL M."
 export const maskPatientName = (fullName: string): string => {
@@ -231,6 +232,25 @@ export const checkInPatient = async (req: AuthenticatedRequest, res: Response, n
       });
     }
 
+    // Trigger Notification for Token Issue
+    try {
+      const patientObj: any = populated?.patientId;
+      const docObj: any = populated?.doctorId;
+      NotificationService.notifyQueueTokenIssued({
+        clinicId: clinic._id,
+        patientId: patientObj?._id,
+        patientName: patientObj?.fullName || 'Patient',
+        doctorName: docObj?.fullName || 'Doctor',
+        clinicName: clinic.clinicName || 'City Health Care Clinic',
+        tokenNumber,
+        waitTime: 15,
+        phone: patientObj?.phone,
+        io
+      }).catch((err) => console.error('[Queue Token Notification Error]', err));
+    } catch (notifErr) {
+      console.error('[Queue Token Notification Failed]', notifErr);
+    }
+
     return sendSuccess(res, populated, 201);
   } catch (error) {
     next(error);
@@ -265,6 +285,24 @@ export const callNextToken = async (req: AuthenticatedRequest, res: Response, ne
       };
       io.emit('queue:called', payload);
       io.emit('queue:updated', { doctorId: (entry.doctorId as any)?._id });
+    }
+
+    // Trigger Notification for Urgent Token Call
+    try {
+      const clinic = await getOrCreateClinic();
+      const patientObj: any = entry.patientId;
+      const docObj: any = entry.doctorId;
+      NotificationService.notifyQueueCalled({
+        clinicId: clinic._id,
+        patientId: patientObj?._id,
+        doctorName: docObj?.fullName || 'Doctor',
+        roomNumber: docObj?.roomNumber || '1',
+        tokenNumber: entry.tokenNumber,
+        phone: patientObj?.phone,
+        io
+      }).catch((err) => console.error('[Queue Called Notification Error]', err));
+    } catch (notifErr) {
+      console.error('[Queue Called Notification Failed]', notifErr);
     }
 
     return sendSuccess(res, entry);

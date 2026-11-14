@@ -22,6 +22,7 @@ import { BookAppointmentPage } from './pages/patient/BookAppointmentPage';
 import { LiveQueuePage } from './pages/queue/LiveQueuePage';
 import { PatientPortal } from './pages/PatientPortal';
 import { WaitingRoomDisplay } from './pages/WaitingRoomDisplay';
+import { NotificationCenterPage } from './pages/notifications/NotificationCenterPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 export const App: React.FC = () => {
@@ -322,6 +323,40 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute allowedRoles={['PATIENT', 'ADMIN']}>
                   <PatientPortal />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Notification Center (All Authenticated Clinical Staff & Patients) */}
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN', 'DOCTOR', 'RECEPTIONIST', 'PATIENT']}>
+                  <NotificationCenterPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/notifications"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <NotificationCenterPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reception/notifications"
+              element={
+                <ProtectedRoute allowedRoles={['RECEPTIONIST', 'ADMIN']}>
+                  <NotificationCenterPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/doctor/notifications"
+              element={
+                <ProtectedRoute allowedRoles={['DOCTOR', 'ADMIN']}>
+                  <NotificationCenterPage />
                 </ProtectedRoute>
               }
             />

@@ -14,7 +14,8 @@ import {
   ListOrdered,
   PlusCircle,
   FolderOpen,
-  UserCheck
+  UserCheck,
+  Bell
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -32,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, isCollapsed = fal
           { to: '/doctor/appointments', label: "Today's Schedule", icon: Calendar },
           { to: '/doctor/patients', label: 'Patient Directory', icon: Users },
           { to: '/doctor/records', label: 'Medical Records & EMR', icon: FolderOpen },
+          { to: '/notifications', label: 'Notification Center', icon: Bell },
         ];
       case 'RECEPTIONIST':
         return [
@@ -41,6 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, isCollapsed = fal
           { to: '/reception/records', label: 'Diagnostic Vault', icon: FolderOpen },
           { to: '/reception/billing', label: 'Cashier & Settlement', icon: CreditCard },
           { to: '/reception/patients', label: 'Patient Directory', icon: Users },
+          { to: '/notifications', label: 'Notification Center', icon: Bell },
         ];
       case 'PATIENT':
         return [
@@ -50,6 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, isCollapsed = fal
           { to: '/portal/prescriptions', label: 'My Prescriptions', icon: FileText },
           { to: '/portal/reports', label: 'Diagnostic Reports', icon: FolderOpen },
           { to: '/portal/invoices', label: 'Payment Receipts', icon: CreditCard },
+          { to: '/notifications', label: 'Notifications', icon: Bell },
         ];
       case 'ADMIN':
       default:
@@ -63,6 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, isCollapsed = fal
           { to: '/admin/billing', label: 'Billing & Cash Ledger', icon: CreditCard },
           { to: '/admin/analytics', label: 'Business Analytics', icon: BarChart3 },
           { to: '/admin/audit', label: 'Compliance Audit Logs', icon: Shield },
+          { to: '/notifications', label: 'Notifications & DLT Hub', icon: Bell },
           { to: '/admin/settings', label: 'Clinic Configuration', icon: Settings },
         ];
     }
