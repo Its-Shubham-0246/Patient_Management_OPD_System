@@ -24,6 +24,7 @@ import { PatientPortal } from './pages/PatientPortal';
 import { LiveTokenTrackerPage } from './pages/patient/LiveTokenTrackerPage';
 import { WaitingRoomDisplay } from './pages/WaitingRoomDisplay';
 import { NotificationCenterPage } from './pages/notifications/NotificationCenterPage';
+import { AnalyticsDashboardPage } from './pages/admin/AnalyticsDashboardPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 export const App: React.FC = () => {
@@ -105,6 +106,14 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute allowedRoles={['ADMIN']}>
                   <BillingLedgerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/analytics"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <AnalyticsDashboardPage />
                 </ProtectedRoute>
               }
             />

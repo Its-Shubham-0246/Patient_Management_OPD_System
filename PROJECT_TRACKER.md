@@ -3,7 +3,7 @@
 > **Document ID:** PROJECT_TRACKER.md  
 > **System Scope:** Outpatient Department (OPD) Management Platform for a Single Clinic  
 > **Current Stage:** Stage B – Application Implementation  
-> **Active Phase:** PHASE 13 – Analytics  
+> **Active Phase:** PHASE 14 – Advanced Features  
 > **Last Updated:** 2026-11-14  
 > **Repository Structure:** `frontend/`, `backend/`, `docs/`, `README.md`, `PROJECT_TRACKER.md`, `.gitignore`  
 
@@ -16,7 +16,7 @@
 | **Product Name** | Smart OPD (Single Clinic Digital Healthcare Platform) | Configurable clinic branding, working hours & fees |
 | **Stage A Status** | **100% COMPLETE & AUDITED** | All 15 master documents approved and harmonized |
 | **Stage B Target** | **15 Implementation Phases** | Full working MERN application with zero mock dependency |
-| **Current Focus** | **Phase 13: Analytics** | Recharts executive dashboards: daily patient footfall, new vs returning ratio, doctor-wise volume, average wait time, revenue trends, cancellation statistics |
+| **Current Focus** | **Phase 14: Advanced Features** | Non-autonomous AI clinical co-pilot (EMR summarization, dictation structuring, preliminary intake tags), mandatory Human-in-the-Loop review, smart operational recommendations |
 | **Primary Tech Stack** | React 18, Vite, TypeScript, Tailwind CSS, Node.js 20/24, Express, MongoDB 8, Socket.IO | Production-grade single-clinic architecture |
 
 ---
@@ -37,7 +37,7 @@
 | **10** | **Billing** | **COMPLETED** | Itemized invoice generation (`INV-YYMM-XXXXX`), partial/full payment recording (Cash, Static UPI QR, Card), sequential receipts (`RCPT-YYMM-XXXXX`), Admin PIN discount authorization guard (HTTP 403 on invalid PIN), daily collection report, printable GST/CEA tax invoice and thermal slip. |
 | **11** | **Notifications** | **COMPLETED** | Multi-channel notification engine (In-App, Nodemailer SMTP Email, TRAI DLT Compliant SMS), 7 pre-registered DLT templates (Header: `SMROPD`), DPDP Act 2023 legal footers, live header bell with unread popover dropdown, interactive Notification Center and DLT telecommunications sandbox. Verified via 30/30 automated checkpoints. |
 | **12** | **Patient Portal** | **COMPLETED** | Complete patient self-service portal, live today's token card with queue position and wait time, dedicated mobile-first `LiveTokenTrackerPage` with Web Audio chime, appointment booking & cancellation with reason audit, tabbed clinical hub (prescriptions, diagnostic vault, invoices), and profile editor modal. Verified via 20/20 automated checkpoints. |
-| **13** | **Analytics** | **IN PROGRESS** | Recharts executive dashboards: daily patient footfall, new vs returning ratio, doctor-wise volume, average wait time, revenue trends, cancellation statistics. |
+| **13** | **Analytics** | **COMPLETED** | Recharts executive dashboards: daily patient footfall, new vs returning ratio, doctor-wise volume, average wait time, revenue trends, cancellation statistics, age & gender cohorts, CSV export. Verified via 57/57 checkpoints. |
 | **14** | **Advanced Features** | PENDING | Non-autonomous AI clinical co-pilot (EMR summarization, dictation structuring, preliminary intake tags), mandatory Human-in-the-Loop review, smart operational recommendations. |
 | **15** | **Quality and Deployment** | PENDING | Full test suites (Unit, Integration, E2E), security testing, RBAC testing, error handling, backup scripts, production deployment configuration, final report. |
 
@@ -471,21 +471,58 @@
 ---
 
 ### Phase 13 Task Checklist: Analytics & Business Intelligence
-- [ ] Implement Analytics Aggregations & Controller (`backend/src/controllers/analyticsController.ts`):
-  - Daily patient footfall & trend over time (date range filtering).
-  - New vs returning patient ratio.
-  - Doctor-wise consultation volume & workload index.
-  - Average patient waiting time & consultation duration.
-  - Revenue trends broken down by payment mode (Cash, UPI, Card).
-  - Appointment cancellation and no-show rates.
-- [ ] Mount Analytics routes in `backend/src/routes/analyticsRoutes.ts`:
-  - `GET /api/v1/analytics/dashboard`
-  - `GET /api/v1/analytics/revenue`
-  - `GET /api/v1/analytics/doctors`
-  - `GET /api/v1/analytics/wait-times`
-- [ ] Build Frontend Analytics Service (`frontend/src/services/analyticsService.ts`).
-- [ ] Build Executive Business Analytics Dashboard (`frontend/src/pages/admin/AnalyticsDashboardPage.tsx`):
-  - Date range selector (Today, 7 Days, 30 Days, Custom Range).
-  - Recharts visual graphs (AreaChart for footfall trends, BarChart for doctor volumes, PieChart for payment methods, BarChart for wait times).
-  - Export report to CSV / printable summary.
-- [ ] Verify TypeScript builds and run automated verification tests (`backend/test_phase13.mjs`).
+- [x] Implement Analytics Aggregations & Controller (`backend/src/controllers/analyticsController.ts`):
+  - `parseDateRange` helper defaulting to last 30 days with custom `?from=YYYY-MM-DD&to=YYYY-MM-DD` query override.
+  - `getOverviewAnalytics`: Total clinic patients, new patients in window, total scheduled appointments, completed consultations, cancellation rate %, total invoiced revenue, collections, outstanding dues, average wait time, and emergency cases.
+  - `getAppointmentAnalytics`: Status breakdown (`CONFIRMED`, `CHECKED_IN`, `COMPLETED`, `CANCELLED`, `NO_SHOW`), daily volume trend with completed vs cancelled distribution, doctor volume breakdown, and booking channels.
+  - `getRevenueAnalytics`: Financial ledger breakdown, payment channels (`cash`, `upi`, `card`, `netbanking`, `other`), daily invoiced vs collected trend, itemized categories (`consultation`, `lab`, `procedure`, `medicine`), and physician billing attribution.
+  - `getDoctorAnalytics`: Active doctor roster metrics, total appointments, completed consultations, completion rate %, revenue generated, room numbers, and average consultation durations.
+  - `getPatientAnalytics`: Total registered vs new vs returning cohorts, gender ratio (`MALE`, `FEMALE`, `OTHER`), age cohorts (`0-17`, `18-35`, `36-50`, `51-65`, `65+`), top clinical allergies, and chronic conditions.
+  - `getQueueAnalytics`: Total tokens issued, average wait minutes (14.5m baseline), peak OPD check-in hour detection, emergency case counts, skipped rates, and 13-hour hourly check-in distribution (08:00 to 20:00).
+- [x] Mount Analytics routes in `backend/src/routes/analyticsRoutes.ts`:
+  - `GET /api/v1/analytics/dashboard` (operational dashboard stats)
+  - `GET /api/v1/analytics/overview` (executive KPIs)
+  - `GET /api/v1/analytics/appointments` (booking & cancellation trends)
+  - `GET /api/v1/analytics/revenue` (financial reconciliation)
+  - `GET /api/v1/analytics/doctors` (physician performance)
+  - `GET /api/v1/analytics/patients` (demographic cohorts)
+  - `GET /api/v1/analytics/queue` (throughput & peak hours)
+  - Protected with `authenticate` and `restrictTo` role guards.
+- [x] Build Frontend Analytics Service (`frontend/src/services/analyticsService.ts`):
+  - Typed TypeScript client bindings for all 6 analytics aggregation endpoints with date range parameters.
+- [x] Build Executive Business Analytics Dashboard (`frontend/src/pages/admin/AnalyticsDashboardPage.tsx`):
+  - Preset filter tabs: "Today", "Last 7 Days", "Last 30 Days", "This Month", and "Custom" date picker.
+  - 5 Top Executive StatCards: Total Revenue, Outstanding Dues (with collection rate), Total Appointments (with completed & cancellation rate), Clinic Footfall (with new patients count), Average OPD Wait (with peak hour badge).
+  - Recharts Visualizations:
+    - **Revenue & Collections Trend**: `ResponsiveContainer` + `AreaChart` with dual linear gradients (`#3B82F6` Invoiced vs `#10B981` Collected).
+    - **Payment Channels**: Donut `PieChart` with color-coded legend and formatted INR values.
+    - **Daily Patient Appointments**: Grouped `BarChart` comparing Total Scheduled vs Completed Consultations.
+    - **Queue Hourly Ingress**: `BarChart` displaying hourly token check-in density across operating hours (08:00 - 20:00) with peak hour badge.
+    - **Doctor Productivity Table**: Physician directory with specialization, room, appointments, completed consultations, completion rate progress bar, and revenue attribution.
+    - **Patient Demographics**: Horizontal `BarChart` for age groups (`0-17`, `18-35`, `36-50`, `51-65`, `65+`), gender ratio donut chart, and risk badges for top chronic conditions and allergies.
+  - One-click CSV Export button downloading `smart_opd_analytics_<date>.csv` with complete financial and clinical metrics for accounting reconciliation.
+- [x] Route `/admin/analytics` wired in `frontend/src/App.tsx` and linked from `Sidebar.tsx`.
+- [x] Verify backend build (`npm run build --prefix backend` -> 0 errors).
+- [x] Verify frontend build (`npm run build --prefix frontend` -> 0 errors in 11.71s).
+- [x] Execute automated end-to-end integration test (`node backend/test_phase13.mjs`):
+  - 57 / 57 checkpoints passed with exit code 0 (100% pass rate).
+
+---
+
+### Phase 14 Task Checklist: Advanced Features (Clinical AI Co-Pilot & HITL)
+- [ ] Design non-autonomous Clinical AI Assistant Service (`backend/src/services/aiAssistantService.ts`):
+  - EMR visit summarizer (converting raw doctor notes/vitals into structured clinical summary).
+  - Voice-to-text / dictation structuring engine (mapping freeform clinical notes into Subjective, Objective, Assessment, Plan - SOAP format).
+  - Preliminary intake symptom tagger with ICD-10 suggestions.
+  - Strict non-autonomous Human-in-the-Loop (HITL) architectural boundary: AI generates suggestions only; doctor must explicitly review, edit, and click "Accept & Commit".
+- [ ] Build AI Co-Pilot Controller & Routes (`backend/src/controllers/aiController.ts` & `backend/src/routes/aiRoutes.ts`):
+  - `POST /api/v1/ai/soap-assist`: Structure unstructured clinical consultation notes into SOAP format.
+  - `POST /api/v1/ai/summarize-history`: Longitudinal timeline summarization for multi-visit patients.
+  - `POST /api/v1/ai/drug-interaction-check`: Safety check verifying prescribed medications against patient documented allergies.
+  - `POST /api/v1/ai/operational-forecast`: Smart queue volume and peak load forecast.
+- [ ] Build Doctor Consultation AI Assistant Drawer / Co-Pilot Panel in `DoctorWorkspacePage.tsx`:
+  - One-click "Structure to SOAP" button.
+  - Suggested differential diagnoses & ICD-10 codes with 1-click addition.
+  - Allergen cross-reaction alerts on prescription drugs.
+  - Mandatory doctor approval banner ("Review and Approve AI Suggestion").
+- [ ] Verify TypeScript builds and execute verification tests (`backend/test_phase14.mjs`).
