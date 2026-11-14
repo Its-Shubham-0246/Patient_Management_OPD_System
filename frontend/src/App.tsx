@@ -15,6 +15,7 @@ import { PatientProfilePage } from './pages/patient/PatientProfilePage';
 import { DoctorDashboard } from './pages/DoctorDashboard';
 import { DoctorWorkspacePage } from './pages/doctor/DoctorWorkspacePage';
 import { MedicalRecordsPage } from './pages/patient/MedicalRecordsPage';
+import { BillingLedgerPage } from './pages/billing/BillingLedgerPage';
 import { ReceptionDashboard } from './pages/ReceptionDashboard';
 import { AppointmentSchedulingPage } from './pages/appointments/AppointmentSchedulingPage';
 import { BookAppointmentPage } from './pages/patient/BookAppointmentPage';
@@ -94,6 +95,14 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute allowedRoles={['ADMIN']}>
                   <DoctorWorkspacePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/billing"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <BillingLedgerPage />
                 </ProtectedRoute>
               }
             />
@@ -188,6 +197,14 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute allowedRoles={['RECEPTIONIST', 'ADMIN']}>
                   <AppointmentSchedulingPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reception/billing"
+              element={
+                <ProtectedRoute allowedRoles={['RECEPTIONIST', 'ADMIN']}>
+                  <BillingLedgerPage />
                 </ProtectedRoute>
               }
             />
@@ -289,6 +306,14 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute allowedRoles={['PATIENT', 'ADMIN']}>
                   <MedicalRecordsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/portal/invoices"
+              element={
+                <ProtectedRoute allowedRoles={['PATIENT', 'ADMIN']}>
+                  <BillingLedgerPage />
                 </ProtectedRoute>
               }
             />

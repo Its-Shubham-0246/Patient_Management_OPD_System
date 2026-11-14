@@ -9,6 +9,8 @@ import appointmentRoutes from './appointmentRoutes.js';
 import queueRoutes from './queueRoutes.js';
 import prescriptionRoutes from './prescriptionRoutes.js';
 import medicalRecordRoutes from './medicalRecordRoutes.js';
+import billingRoutes from './billingRoutes.js';
+import paymentRoutes from './paymentRoutes.js';
 import analyticsRoutes from './analyticsRoutes.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 
@@ -27,6 +29,9 @@ router.use('/prescriptions', prescriptionRoutes);
 router.use('/records', medicalRecordRoutes);
 router.use('/reports', medicalRecordRoutes);
 router.use('/followups', medicalRecordRoutes);
+router.use('/invoices', billingRoutes);
+router.use('/billing', billingRoutes);
+router.use('/payments', paymentRoutes);
 router.use('/analytics', analyticsRoutes);
 
 // Root API v1 info

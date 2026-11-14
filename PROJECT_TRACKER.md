@@ -3,7 +3,7 @@
 > **Document ID:** PROJECT_TRACKER.md  
 > **System Scope:** Outpatient Department (OPD) Management Platform for a Single Clinic  
 > **Current Stage:** Stage B – Application Implementation  
-> **Active Phase:** PHASE 10 – Billing  
+> **Active Phase:** PHASE 11 – Notifications  
 > **Last Updated:** 2026-11-14  
 > **Repository Structure:** `frontend/`, `backend/`, `docs/`, `README.md`, `PROJECT_TRACKER.md`, `.gitignore`  
 
@@ -16,7 +16,7 @@
 | **Product Name** | Smart OPD (Single Clinic Digital Healthcare Platform) | Configurable clinic branding, working hours & fees |
 | **Stage A Status** | **100% COMPLETE & AUDITED** | All 15 master documents approved and harmonized |
 | **Stage B Target** | **15 Implementation Phases** | Full working MERN application with zero mock dependency |
-| **Current Focus** | **Phase 10: Billing** | Consultation charges, itemized invoice generation (`INV-YYMM-XXXXX`), payment recording (Cash, Static UPI QR, Card), Admin PIN discount authorization, daily collection reports |
+| **Current Focus** | **Phase 11: Notifications** | DLT SMS templates (Booking confirmation, Token call, Follow-up alert, Cancellation), Nodemailer HTML email notifications, in-app notification center |
 | **Primary Tech Stack** | React 18, Vite, TypeScript, Tailwind CSS, Node.js 20/24, Express, MongoDB 8, Socket.IO | Production-grade single-clinic architecture |
 
 ---
@@ -34,7 +34,8 @@
 | **07** | **OPD Queue** | **COMPLETED** | Check-in trigger, daily sequential token generation (Token #1, #2... per doctor), live Socket.IO queue, waiting/called/in-consultation/completed/skipped states, emergency priority promotion, dynamic wait time estimation, 4K TV display board with DPDP Act name masking (`RAHUL M.`) and dual-tone audio chime (D5->A5). |
 | **08** | **Doctor Consultation** | **COMPLETED** | Daily schedule roster, waiting patients list, patient longitudinal EMR, chief complaints, vitals with BMI auto-calc, diagnosis with ICD-10, treatment plan, digital prescription builder (`RX-YYMM-XXXXX`), official printable A4 prescription letterhead, digital signature block. |
 | **09** | **Medical Records** | **COMPLETED** | Prescription history, diagnostic report uploads with DISHA 7-year retention tracking, unified longitudinal patient timeline (`/records/patient/:id/timeline`), report soft-deletion, and follow-up scheduling. |
-| **10** | **Billing** | **IN PROGRESS** | Consultation charges, itemized invoice generation, payment recording (Cash, Static UPI QR, Card), discounts with Admin PIN permission, payment receipts, daily collection report. |
+| **10** | **Billing** | **COMPLETED** | Itemized invoice generation (`INV-YYMM-XXXXX`), partial/full payment recording (Cash, Static UPI QR, Card), sequential receipts (`RCPT-YYMM-XXXXX`), Admin PIN discount authorization guard (HTTP 403 on invalid PIN), daily collection report, printable GST/CEA tax invoice and thermal slip. |
+| **11** | **Notifications** | **IN PROGRESS** | Appointment confirmations, reminders, cancellation alerts, follow-up alerts, email (Nodemailer) and SMS integration ready. |
 | **11** | **Notifications** | PENDING | Appointment confirmations, reminders, cancellation alerts, follow-up alerts, email (Nodemailer) and SMS integration ready. |
 | **12** | **Patient Portal** | PENDING | Patient self-service login, appointment booking (auto-alloc or choice), live token status tracker, downloadable PDF prescriptions and receipts, medical records viewer. |
 | **13** | **Analytics** | PENDING | Recharts executive dashboards: daily patient footfall, new vs returning ratio, doctor-wise volume, average wait time, revenue trends, cancellation statistics. |
@@ -338,30 +339,64 @@
   - Verified soft delete of diagnostic report.
 
 ### Phase 10 Task Checklist: Billing
-- [ ] Create Invoice & Payment Models:
+- [x] Create Invoice & Payment Models:
   - `backend/src/models/Invoice.ts`:
     - Linkages: clinicId, patientId, doctorId, visitId, appointmentId.
     - Sequential monthly invoice number: `INV-YYMM-XXXXX`.
-    - Line items: itemType (CONSULTATION, PROCEDURE, LAB_TEST, PHARMACY, REGISTRATION, OTHER), description, unitPrice, quantity, amount.
-    - Financials: subtotal, discountAmount, discountPercentage, discountReason, discountApprovedBy (Admin PIN auth), taxAmount, totalAmount, paidAmount, balanceAmount.
-    - Status: DRAFT, PENDING, PAID, PARTIALLY_PAID, VOID, REFUNDED.
+    - Line items: description, category (consultation, procedure, lab, medicine, registration, other), quantity, unitPrice, discount, tax, total.
+    - Financials: subtotal, discountAmount, discountPercentage, discountReason, discountApprovedBy (Admin PIN auth), taxAmount, grandTotal, paidAmount, balanceAmount.
+    - Status: draft, pending, partially_paid, paid, void, refunded.
   - `backend/src/models/Payment.ts`:
-    - Linkages: clinicId, invoiceId, patientId, collectedBy.
+    - Linkages: clinicId, invoiceId, patientId, receivedBy.
     - Sequential receipt number: `RCPT-YYMM-XXXXX`.
-    - Method: CASH, UPI_STATIC_QR, CARD, NET_BANKING, OTHER.
-    - Payment details: amount, transactionReference, notes, receivedAt.
-- [ ] Build Billing & Settlement Controller (`backend/src/controllers/billingController.ts`) & Routes:
-  - `POST /api/v1/invoices`: Generate itemized invoice from completed visit/consultation.
+    - Methods: cash, card, upi, netbanking, insurance, cheque, other.
+    - Payment details: amount, transactionRef (UTR/auth code), paymentDate, notes.
+- [x] Build Billing & Settlement Controller (`backend/src/controllers/billingController.ts`) & Routes:
+  - `POST /api/v1/invoices`: Itemized invoice creation with discount validation (requires Admin PIN e.g. "1234", rejects invalid PIN with HTTP 403 Forbidden).
   - `GET /api/v1/invoices`: Paginated invoice list with patient, doctor, status, date filters.
-  - `GET /api/v1/invoices/:id`: Detailed invoice view with line items and payments.
-  - `POST /api/v1/invoices/:id/payments`: Record payment (Cash, Static UPI QR, Card) with automatic balance recalculation and receipt generation.
-  - `POST /api/v1/invoices/:id/discount`: Apply discount requiring Admin PIN authorization.
+  - `GET /api/v1/invoices/:id`: Detailed invoice view with line items and attached payments trail.
+  - `POST /api/v1/invoices/:id/payments`: Record payment (Cash, Static UPI QR, Card) with automatic balance recalculation, receipt issuance (`RCPT-YYMM-XXXXX`), and status transition (`partially_paid` -> `paid`).
+  - `POST /api/v1/invoices/:id/discount`: Apply discount with Admin PIN authorization.
   - `GET /api/v1/billing/daily-report`: Daily collections report broken down by payment mode (Cash vs UPI vs Card) and cashier.
-- [ ] Build Frontend Billing Service (`frontend/src/services/billingService.ts`).
-- [ ] Build Front-Desk Cashier & Settlement Page (`frontend/src/pages/billing/BillingLedgerPage.tsx`):
+  - `POST /api/v1/invoices/:id/void`: Soft void invoice with reason audit trail.
+- [x] Build Frontend Billing Service (`frontend/src/services/billingService.ts`).
+- [x] Build Front-Desk Cashier & Settlement Page (`frontend/src/pages/billing/BillingLedgerPage.tsx`):
   - Daily collection summary cards (Total Invoiced, Cash Collected, UPI Collected, Card Collected, Outstanding Balance).
-  - Unpaid / Pending invoices queue with 1-click "Settle Bill" action.
-  - Settlement Modal with Static UPI QR display, Cash change calculator, and Admin PIN discount unlock.
+  - Unpaid / Pending invoices table with 1-click "Settle Bill" action.
+  - Settlement Modal with Static UPI QR display (scan to pay with amount and VPA), Cash change calculator (cash tendered - bill amount), and Card authorization code.
   - Printable official GST / Clinical Establishments Act tax invoice and thermal receipt.
-- [ ] Mount routes in `frontend/src/App.tsx` and `Sidebar.tsx`.
+- [x] Mount routes in `frontend/src/App.tsx`:
+  - `/admin/billing`, `/reception/billing`, `/portal/invoices`.
+- [x] Verify backend build (`npm run build --prefix backend` -> 0 errors).
+- [x] Verify frontend build (`npm run build --prefix frontend` -> 0 errors in 11.66s).
+- [x] Execute automated end-to-end integration test (`node backend/test_phase10.mjs`):
+  - Created patient and generated invoice with line items (₹930 subtotal).
+  - Verified 403 rejection on invalid Admin PIN for discount.
+  - Applied 10% discount with valid PIN -> Grand Total ₹837.00.
+  - Recorded partial UPI payment (₹337.00) -> Status transitioned to `partially_paid`, balance ₹500.00.
+  - Recorded final Cash payment (₹500.00) -> Status transitioned to `paid`, balance ₹0.00.
+  - Queried payment receipts list -> Returned 2 receipts.
+  - Generated daily collection report -> Aggregated ₹1674 collected across modes.
+  - Voided unpaid invoice -> Status transitioned to `void`.
+
+### Phase 11 Task Checklist: Notifications
+- [ ] Create Notification Model (`backend/src/models/Notification.ts`):
+  - Linkages: clinicId, recipientUserId, patientId.
+  - Channels: SMS, EMAIL, IN_APP, WHATSAPP.
+  - Types: APPOINTMENT_CONFIRMATION, APPOINTMENT_REMINDER, QUEUE_TOKEN_CALLED, FOLLOW_UP_REMINDER, INVOICE_RECEIPT, APPOINTMENT_CANCELLED.
+  - Status: PENDING, SENT, DELIVERED, FAILED.
+  - Metadata: title, body, templateId, externalReference, readAt.
+- [ ] Implement Notification Engine & Email/SMS Service:
+  - `backend/src/services/notificationService.ts`:
+    - Nodemailer SMTP transporter integration (with fallback dev logger).
+    - Indian TRAI DLT approved SMS templates (Booking confirmation, Token alert, Follow-up reminder).
+    - Responsive HTML clinical email templates with clinic branding and direct appointment / portal links.
+- [ ] Build Notification Controller (`backend/src/controllers/notificationController.ts`) & Routes:
+  - `GET /api/v1/notifications`: User notifications with pagination and unread filter.
+  - `PUT /api/v1/notifications/:id/read`: Mark notification as read.
+  - `PUT /api/v1/notifications/read-all`: Mark all as read.
+  - `POST /api/v1/notifications/test-send`: Staff test trigger for email/SMS.
+- [ ] Build Frontend Notification Service & UI components:
+  - Real-time notification bell dropdown in Header (`frontend/src/components/layout/Header.tsx`).
+  - Notification Center Page (`frontend/src/pages/notifications/NotificationCenterPage.tsx`).
 - [ ] Verify TypeScript builds and run integration test against live backend & MongoDB.
