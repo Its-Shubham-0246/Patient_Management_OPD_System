@@ -683,3 +683,4 @@ export const AiClinicalCopilotModal: React.FC<AiClinicalCopilotModalProps> = ({
     </div>
   );
 };
+

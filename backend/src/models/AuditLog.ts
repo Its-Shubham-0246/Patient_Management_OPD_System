@@ -39,3 +39,4 @@ const AuditLogSchema = new Schema<IAuditLog>(
 AuditLogSchema.index({ clinicId: 1, action: 1, timestamp: -1 });
 
 export const AuditLog = mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);
+

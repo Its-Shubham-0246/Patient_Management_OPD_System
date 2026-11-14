@@ -22,3 +22,4 @@ router.post('/audit-accept', authenticate, restrictTo('DOCTOR', 'ADMIN'), auditA
 router.get('/audit-logs', authenticate, restrictTo('DOCTOR', 'ADMIN'), getAuditLogs);
 
 export default router;
+

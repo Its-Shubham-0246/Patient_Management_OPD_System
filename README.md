@@ -1,197 +1,347 @@
-# 🏥 Smart OPD – Clinic Management Platform
+# Smart OPD – Single Clinic Outpatient Department Platform
 
-> A modern outpatient department (OPD) clinic management software suite architected for private clinics, polyclinics, and outpatient healthcare centers. Built with **React 18, TypeScript, Node.js 20, Express, MongoDB 7, and Socket.IO**.
+> A production-grade Outpatient Department (OPD) management suite architected for private clinics, polyclinics, and outpatient healthcare centers. Built with **React 18, TypeScript, Node.js 20/24, Express, MongoDB 8, and Socket.IO**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node: v20 LTS](https://img.shields.io/badge/Node.js-v20_LTS-green.svg)](https://nodejs.org/)
 [![React: v18](https://img.shields.io/badge/React-v18-blue.svg)](https://react.dev/)
 [![TypeScript: v5](https://img.shields.io/badge/TypeScript-v5-3178C6.svg)](https://www.typescriptlang.org/)
-[![MongoDB: v7](https://img.shields.io/badge/MongoDB-v7.0-47A248.svg)](https://www.mongodb.com/)
+[![MongoDB: v8](https://img.shields.io/badge/MongoDB-v8.0-47A248.svg)](https://www.mongodb.com/)
 [![Tailwind CSS: v3](https://img.shields.io/badge/Tailwind_CSS-v3.4-38B2AC.svg)](https://tailwindcss.com/)
 [![Socket.IO: v4](https://img.shields.io/badge/Socket.IO-v4-010101.svg)](https://socket.io/)
 
 ---
 
-## 🌟 Product Vision & Capabilities
+## 1. Product Capabilities & Clinical Principles
 
-**Smart OPD** digitalizes the outpatient lifecycle for healthcare practices. Rather than a generic administrative tool, it is designed around actual clinical and front-desk workflows:
+**Smart OPD** digitalizes the complete outpatient healthcare encounter from arrival to post-consultation follow-up, designed around actual clinical and front-desk workflows:
 
-- **Configurable Identity**: Multi-tenant database design with tenant boundary (`clinicId`). Clinic name, logo, contact, departments, operating hours, consultation fees, and appointment rules are fully configurable.
-- **Appointment ≠ OPD Token**: An appointment reserves a scheduled doctor time slot. Physical arrival and receptionist check-in creates an active clinical `Visit` and issues a live, sequential OPD Token.
-- **Real-Time Live Queue**: Waiting room screen and clinician workspace synchronize over WebSocket (Socket.IO). Doctors call the next patient with one click; priority emergency cases can be expedited with clinician approval.
-- **Paperless Clinical Workspace**: Doctors access a clinical console with an interactive medical history timeline, diagnosis recording (with optional ICD-10 codes), drug dosage formulary, and one-click PDF prescription generation.
-- **Complete Billing & E-Receipts**: Cashier billing console generates itemized receipts (consultations, diagnostic procedures, treatments) with multiple settlement options (Cash, UPI QR, Card) and automated PDF invoices.
-- **Security & Privacy First**: Engineered in accordance with the Indian **Digital Personal Data Protection (DPDP) Act 2023**, with bcrypt password hashing (cost factor 12), short-lived access JWTs + rotated refresh tokens in `httpOnly` secure cookies, granular role-based access control (RBAC), and immutable audit logs.
+- **Single-Clinic Tenant Boundary**: Single-clinic architecture enforcing strict `clinicId` boundaries on all collections.
+- **Appointment != OPD Token**: An appointment reserves a scheduled doctor time slot. Physical arrival and check-in creates an active clinical `Visit` and issues a live, sequential daily OPD Token (`Token #1`, `#2`...).
+- **Real-Time Live Queue & 4K TV Display**: Waiting room 4K TV screen and clinician workspace synchronize over WebSocket (Socket.IO). Doctors call the next patient with one click; priority emergency cases can be expedited; audio chimes (Web Audio API D5 -> A5 slide) notify patients. DPDP Act 2023 compliant name masking (`RAHUL M.`).
+- **Paperless Clinical Workspace**: Doctors access an interactive longitudinal EMR timeline, vitals logging with automatic BMI calculation, chief complaints, ICD-10 diagnostic coding, and digital prescription generation (`RX-YYMM-XXXXX`) with printable A4 letterhead.
+- **Non-Autonomous Clinical AI Co-Pilot**: Dictation-to-SOAP structuring, ICD-10 grounding, longitudinal patient summaries, and pharmacovigilance screening (allergy and contraindication cross-checks). Governed strictly under mandatory Human-in-the-Loop (HITL) doctor review with immutable medico-legal audit trails.
+- **Complete Billing & Cashier Ledger**: Cashier console generates itemized receipts (consultations, lab tests, procedures) with multiple settlement options (Cash, Dynamic UPI, Card), Admin PIN discount authorization, printable GST tax invoices (`INV-YYMM-XXXXX`), and thermal slips (`RCPT-YYMM-XXXXX`).
+- **Multi-Channel Notifications**: TRAI DLT Compliant SMS (Header: `SMROPD`, <= 160 GSM chars), Nodemailer SMTP emails with DPDP footers, and Socket.IO real-time in-app alerts.
+- **Patient Self-Service Portal**: Mobile-first live token tracker (`/portal/token`), appointment booking/cancellation, digital prescription vault, and profile management.
+- **Executive Analytics & BI**: Interactive Recharts dashboards for revenue trends, footfall, payment channels, doctor workload, age cohorts, and 1-click accounting CSV export.
+- **Security & Privacy First**: Compliant with the Indian **Digital Personal Data Protection (DPDP) Act 2023**, DISHA 7-year retention guidelines, bcrypt password hashing (cost 12), dual-token JWT (15m access + 7d rotated httpOnly refresh cookies), and immutable audit logs.
 
 ---
 
-## 👥 Four Distinct Role-Based Portals
+## 2. Four Distinct Role-Based Portals
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        SMART OPD ROLE ECOSYSTEM                        │
-├───────────────────┬───────────────────┬────────────────┬───────────────┤
-│ 👑 Clinic Admin   │ 🩺 Doctor         │ 📋 Receptionist│ 🧑 Patient    │
-├───────────────────┼───────────────────┼────────────────┼───────────────┤
-│ - Clinic Profile  │ - Live OPD Queue  │ - Patient Reg  │ - Self Signup │
-│ - Manage Doctors  │ - Patient EMR     │ - Book Appts   │ - Book Online │
-│ - Staff Rosters   │ - Rx Generator    │ - Check-In     │ - Live Token  │
-│ - Revenue Reports │ - Follow-up Engine│ - Token Dispatch│ - Rx Download │
-│ - Audit Inspector │ - Report Review   │ - POS Billing  │ - Lab Reports │
-└───────────────────┴───────────────────┴────────────────┴───────────────┘
++---------------------------------------------------------------------------------------------------+
+| CLINICAL & ADMINISTRATIVE ROLES                                                                   |
++-------------------+-------------------------------------------------------------------------------+
+| Portal            | Core Capabilities                                                             |
++-------------------+-------------------------------------------------------------------------------+
+| Administrator     | Clinic branding, CEA registration, doctor roster matrix, staff management,    |
+|                   | revenue analytics, cashier ledger, compliance audit logs, and backup tool.    |
+| Receptionist      | Patient ingress, UHID search (Alt+C), new patient registration (Alt+N),       |
+|                   | token check-in, walk-in scheduling, billing settlement, and cash drawer.      |
+| Doctor            | Waiting queue, vitals & BMI, longitudinal EMR, Clinical AI Co-Pilot (SOAP),   |
+|                   | drug safety allergy screen, e-Prescriptions (RX), and follow-up scheduling.   |
+| Patient           | Self-service portal, live token queue tracking (/portal/token), appointments, |
+|                   | digital prescription PDF downloads, diagnostic vault, and payment receipts.   |
++-------------------+-------------------------------------------------------------------------------+
 ```
 
 ---
 
-## 📚 Master Documentation Suite (Stage A Complete)
+## 3. Tech Stack Architecture
 
-Smart OPD is built following an enterprise-grade architectural specification. All 15 master documentation deliverables are available in the [`docs/`](./docs) directory:
-
-| Document | Title | Description |
-|---|---|---|
-| [`01-SRS-Requirements.md`](./docs/01-SRS-Requirements.md) | **Software Requirements Specification (SRS)** | IEEE 830, 22 modules, 4 roles, smart auto-allocation, 50+ user stories, business rules. |
-| [`02-UI-UX-Design.md`](./docs/02-UI-UX-Design.md) | **UI/UX Design Specification & Wireframes** | Screen-by-screen layouts, shadcn/ui components, 4 role dashboards, and 4K waiting TV display. |
-| [`03-MongoDB-Database-Architecture.md`](./docs/03-MongoDB-Database-Architecture.md) | **MongoDB Database Architecture** | 16 Mongoose schemas, compound indexes, Mongoose validators, sample documents, and ERD. |
-| [`04-REST-API-Documentation.md`](./docs/04-REST-API-Documentation.md) | **REST & WebSocket API Spec** | 70+ endpoints across 15 controllers, Zod validation schemas, and real-time Socket.IO events. |
-| [`05-Workflow-Activity-Diagrams.md`](./docs/05-Workflow-Activity-Diagrams.md) | **Clinical & Administrative Workflows** | 22 Mermaid clinical sequence and activity diagrams including auto-allocation and emergency flow. |
-| [`06-Development-Deployment-Roadmap.md`](./docs/06-Development-Deployment-Roadmap.md) | **Development & Deployment Roadmap** | 8 implementation phases, WBS, CI/CD pipelines (Render, Vercel, Atlas), and Gantt timeline. |
-| [`07-Security-Threat-Model.md`](./docs/07-Security-Threat-Model.md) | **Security Architecture & Threat Model** | STRIDE threat model, OWASP Top 10, JWT rotation, RBAC matrix, and tamper-proof audit trails. |
-| [`08-Healthcare-Compliance-Consent.md`](./docs/08-Healthcare-Compliance-Consent.md) | **Healthcare Compliance & Consent Design** | DPDP Act 2023 compliance, explicit consent notices (EN/HI), NMC ethics, and data retention. |
-| [`09-Testing-Strategy-Test-Cases.md`](./docs/09-Testing-Strategy-Test-Cases.md) | **Testing Strategy & Test Cases** | Unit tests (Jest), API integration (Supertest), E2E (Playwright), k6 load, and 50+ test cases. |
-| [`10-Reliability-Backup-Infrastructure.md`](./docs/10-Reliability-Backup-Infrastructure.md) | **Reliability, Backup & Infrastructure** | 99.5% SLO, 3-tier backups (Atlas PITR + cold dumps), RTO/RPO targets, and health checks. |
-| [`11-Market-Research-Competitor-Analysis.md`](./docs/11-Market-Research-Competitor-Analysis.md) | **Indian Healthcare Market Research** | Practo, MediXcel, Clinicea benchmarks, verified Indian outpatient data, and UVP. |
-| [`12-Business-Model-Onboarding.md`](./docs/12-Business-Model-Onboarding.md) | **Business Model & Clinic Onboarding** | 5-phase onboarding rollout, TCO breakdown, ROI analysis, and legacy data migration. |
-| [`13-Notification-Integration-Strategy.md`](./docs/13-Notification-Integration-Strategy.md) | **Notification & Integration Strategy** | TRAI DLT transactional SMS templates, SendGrid HTML email, and Socket.IO in-app alerts. |
-| [`14-Accessibility-Multilingual-Strategy.md`](./docs/14-Accessibility-Multilingual-Strategy.md) | **Accessibility & Multilingual Strategy** | WCAG 2.1 Level AA compliance, Hindi/English localization (`i18next`), and audio chime prompt. |
-| [`15-AI-Governance-Validation.md`](./docs/15-AI-Governance-Validation.md) | **AI Governance & Validation Framework** | Non-autonomous clinician co-pilot, mandatory HITL approval, PII de-identification, and safety. |
-
----
-
-## 🛠️ Technology Stack
-
-| Layer | Technology | Purpose / Notes |
-|---|---|---|
-| **Frontend Runtime** | React 18 + Vite | Lightning-fast HMR and optimized SPA builds |
-| **Language** | TypeScript 5 | Strict end-to-end type safety |
-| **Styling & UI** | Tailwind CSS + shadcn/ui | Clean, hospital ERP aesthetic in deep navy & slate |
-| **Icons** | Lucide React | Unified healthcare and interface iconography |
-| **Server State** | TanStack Query v5 | Automatic caching, background refetching, and pagination |
-| **Forms & Validation** | React Hook Form + Zod | High-performance schema-validated forms |
-| **Charts & Analytics** | Recharts | Revenue trends, appointment statistics, patient demographics |
-| **Backend Runtime** | Node.js 20 LTS + Express.js | High-throughput asynchronous REST API |
-| **Database** | MongoDB 7 + Mongoose 8 | Document store with ACID transactions & compound indexes |
-| **Real-Time Sockets** | Socket.IO 4 | Low-latency live OPD token broadcast and queue updates |
-| **PDF Authoring** | PDFKit | Microsecond vector rendering for prescriptions and invoices |
-| **Media Storage** | Cloudinary | Secure storage for patient diagnostic reports and clinic logos |
-| **Email & SMS** | SendGrid / Nodemailer + MSG91 | Transactional healthcare notifications |
+```
+                                SMART OPD ARCHITECTURE
+                                
+  ┌─────────────────────────────────────────────────────────────────────────────────┐
+  │                           FRONTEND (React 18 + Vite)                            │
+  │   Tailwind CSS · Lucide Icons · Recharts · Socket.IO Client · Web Audio API     │
+  └────────────────────────┬───────────────────────────────────────┬────────────────┘
+                           │ HTTPS / REST (JSON)                   │ WSS / WebSocket
+                           ▼                                       ▼
+  ┌─────────────────────────────────────────────────────────────────────────────────┐
+  │                         BACKEND (Node.js 20/24 + Express)                       │
+  │   TypeScript · JWT Auth · Helmet · Nodemailer · AI Co-Pilot (PII Redaction)     │
+  └────────────────────────┬───────────────────────────────────────┬────────────────┘
+                           │ Mongoose 8.x ODM                      │ Event Broadcast
+                           ▼                                       ▼
+  ┌─────────────────────────────────────────────────┐   ┌───────────────────────────┐
+  │                 DATABASE                        │   │     SOCKET.IO ROOMS       │
+  │              MongoDB 8.x                        │   │  clinic:{id} · role:{role}│
+  │   16 Collections · ACID Compound Indexes        │   │  user:{id} · TV Display   │
+  └─────────────────────────────────────────────────┘   └───────────────────────────┘
+```
 
 ---
 
-## 📂 Monorepo Architecture
+## 4. Project Directory Structure
 
 ```
 Patient_Management_OPD_System/
-├── docs/                        # Complete 15 Stage A Architectural Deliverables
-│   ├── 00_DOCUMENTATION_INDEX.md
-│   ├── 01_PRD.md
-│   ├── 02_DATABASE_ARCHITECTURE.md
-│   ├── 03_API_DOCUMENTATION.md
-│   ├── 04_UI_UX_SPECIFICATION.md
-│   ├── 05_SECURITY_AND_COMPLIANCE.md
-│   ├── 06_SYSTEM_ARCHITECTURE.md
-│   ├── 07_WORKFLOWS.md
-│   ├── 08_TESTING_STRATEGY.md
-│   ├── 09_DEPLOYMENT_AND_DEVOPS.md
-│   ├── 10_IMPLEMENTATION_ROADMAP.md
-│   ├── 11_PROJECT_TRACKER.md
-│   ├── 12_DATA_DICTIONARY.md
-│   ├── 13_NOTIFICATION_SYSTEM.md
-│   ├── 14_PDF_GENERATION.md
-│   └── 15_OPEN_QUESTIONS.md
-├── client/                      # React 18 + Vite + TypeScript Frontend
+├── backend/
 │   ├── src/
-│   │   ├── components/          # Reusable UI & shadcn/ui components
-│   │   ├── context/             # AuthContext, ClinicContext, SocketContext
-│   │   ├── hooks/               # useLiveQueue, useAppointments, useAuth
-│   │   ├── layouts/             # DashboardLayout, PatientPortalLayout
-│   │   ├── pages/               # Admin, Doctor, Receptionist, Patient views
-│   │   ├── services/            # Axios API client & endpoints
-│   │   └── types/               # TypeScript interfaces & DTOs
-│   ├── package.json
-│   └── vite.config.ts
-├── server/                      # Node.js 20 + Express + TypeScript Backend
-│   ├── src/
-│   │   ├── config/              # Database, Cloudinary, Email, Environment
-│   │   ├── controllers/         # 15 domain controllers
-│   │   ├── middleware/          # Auth, RBAC, Validation (Zod), Audit logger
-│   │   ├── models/              # 16 Mongoose Schemas
-│   │   ├── routes/              # Express API route modules
-│   │   ├── services/            # Slot generation, PDFKit, Queue, Notifications
-│   │   ├── sockets/             # Socket.IO room & event handlers
-│   │   └── utils/               # AppError, AsyncHandler, Logger
+│   │   ├── config/              # Database & Environment configurations
+│   │   ├── controllers/         # Express controllers (Auth, Patient, Queue, AI, etc.)
+│   │   ├── middleware/          # Auth, RBAC, error handling, rate limiting
+│   │   ├── models/              # 16 Mongoose Schemas (AuditLog, Prescription, etc.)
+│   │   ├── routes/              # Express API Route handlers
+│   │   ├── services/            # Clinical AI, Notifications, Billing, Queue engines
+│   │   ├── utils/               # ApiResponse, DLT SMS sanitizer, UHID generators
+│   │   ├── index.ts             # HTTP & Socket.IO server startup
+│   │   └── server.ts            # Express application factory
+│   ├── scripts/
+│   │   ├── backup.mjs           # Automated SHA-256 database snapshot tool
+│   │   └── restore.mjs          # Cryptographic restore tool
+│   ├── test_phase11.mjs         # Notifications test suite (30/30 passed)
+│   ├── test_phase12.mjs         # Patient Portal test suite (20/20 passed)
+│   ├── test_phase13.mjs         # Analytics test suite (57/57 passed)
+│   ├── test_phase14.mjs         # Clinical AI Co-Pilot test suite (67/67 passed)
+│   ├── test_phase15_e2e.mjs     # Master E2E Lifecycle test suite (41/41 passed)
 │   ├── package.json
 │   └── tsconfig.json
-├── package.json                 # Monorepo root scripts
-└── README.md
+├── frontend/
+│   ├── src/
+│   │   ├── components/          # Reusable UI, Layout, Modals, Doctor AI Drawer
+│   │   ├── context/             # AuthContext, ThemeContext
+│   │   ├── pages/               # Dashboards, Consultation, Portal, Analytics, TV
+│   │   ├── services/            # Axios API clients for all subsystems
+│   │   ├── utils/               # Classnames, formatters, audio chime synth
+│   │   ├── App.tsx              # React Router v6 routing & role guards
+│   │   └── main.tsx             # Application mount point
+│   ├── package.json
+│   └── vite.config.ts
+├── docs/                        # 15 Master Stage A architectural specifications
+├── README.md                    # System documentation and production runbook
+└── PROJECT_TRACKER.md           # Master Phase 1 - 15 completion tracker
 ```
 
 ---
 
-## 🚀 Quick Start (Local Development)
+## 5. Quick Start & Development Setup
 
 ### Prerequisites
-- **Node.js**: v20.x or later installed
-- **pnpm**: v9.x or later installed (`npm install -g pnpm`)
-- **MongoDB**: Local MongoDB 7.0 instance or MongoDB Atlas connection string
+- **Node.js**: v20.x or v22.x LTS
+- **npm**: v10.x+
+- **MongoDB**: Local instance running on `127.0.0.1:27017` or MongoDB Atlas URI
 
-### 1. Installation
+### 1. Clone & Install Dependencies
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/smart-opd.git
-cd smart-opd
+git clone https://github.com/your-org/patient-management-opd-system.git
+cd patient-management-opd-system
 
-# Install all dependencies across client and server
-pnpm install
+# Install backend dependencies
+cd backend && npm install
+
+# Install frontend dependencies
+cd ../frontend && npm install
 ```
 
 ### 2. Environment Configuration
-Create `.env` files in both `server/` and `client/` directories using the reference templates detailed in [`docs/09_DEPLOYMENT_AND_DEVOPS.md`](./docs/09_DEPLOYMENT_AND_DEVOPS.md).
-
-```bash
-# server/.env sample
+Create `backend/.env`:
+```env
 PORT=5000
 NODE_ENV=development
-MONGODB_URI=mongodb://localhost:27017/smart_opd
-JWT_ACCESS_SECRET=your_super_secret_access_key
-JWT_REFRESH_SECRET=your_super_secret_refresh_key
+MONGODB_URI=mongodb://127.0.0.1:27017/smart_opd
+JWT_ACCESS_SECRET=your_super_secret_access_jwt_key_here_32chars
+JWT_REFRESH_SECRET=your_super_secret_refresh_jwt_key_here_32chars
 CORS_ORIGIN=http://localhost:5173
+API_PREFIX=/api/v1
+ADMIN_DISCOUNT_PIN=1234
 ```
 
-### 3. Run Development Servers
+Create `frontend/.env`:
+```env
+VITE_API_BASE_URL=http://localhost:5000/api/v1
+VITE_SOCKET_URL=http://localhost:5000
+```
+
+### 3. Start Development Servers
 ```bash
-# Start both backend and frontend concurrently
-pnpm run dev
+# Terminal 1: Backend
+npm --prefix backend run dev
 
-# Or start individually:
-pnpm --filter server run dev   # Express API on http://localhost:5000
-pnpm --filter client run dev   # Vite Frontend on http://localhost:5173
+# Terminal 2: Frontend
+npm --prefix frontend run dev
+```
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+---
+
+## 6. Default Demo Credentials
+
+You can use the single-click quick login buttons on the login screen or manually enter:
+
+| Role | Email | Password |
+|---|---|---|
+| **Administrator** | `admin@smartopd.in` | `Admin@123` |
+| **Consulting Doctor** | `doctor@smartopd.in` | `Doctor@123` |
+| **Front-Desk Receptionist** | `reception@smartopd.in` | `Reception@123` |
+| **Patient** | `patient@smartopd.in` | `Patient@123` |
+
+---
+
+## 7. Key Operational Endpoints Catalog (`/api/v1`)
+
+```
++------------------------------------------------------------------------------------+
+| CORE API ROUTE MATRIX                                                              |
++-------------------+------------------------+---------------------------------------+
+| Subsystem         | Route                  | Description                           |
++-------------------+------------------------+---------------------------------------+
+| Health Probe      | GET  /health           | Database connection & uptime status   |
+| Authentication    | POST /auth/login       | Authenticate user & issue dual JWTs   |
+|                   | POST /auth/refresh     | Rotate HTTP-only refresh token        |
+|                   | POST /auth/seed        | Seed initial demo clinic & users      |
+| Clinic Settings   | GET  /clinic           | Retrieve CEA registration & profile   |
+|                   | PUT  /clinic           | Update operating rules & timings      |
+| Doctor Directory  | GET  /doctors          | List doctors, fees, & room numbers    |
+| Patient Records   | GET  /patients         | Search patients by name, UHID, phone  |
+|                   | POST /patients         | Register patient & issue UHID         |
+| Appointments      | POST /appointments     | Book appointment with slot lock       |
+| Live OPD Queue    | GET  /queue/:doctorId  | Doctor's live token queue             |
+|                   | POST /queue/checkin    | Receptionist arrival check-in         |
+|                   | POST /queue/call-next  | Doctor calls next waiting patient     |
+| Prescriptions     | POST /prescriptions    | Finalize digital prescription (RX)    |
+| Diagnostics       | POST /records/patient/:id/reports | Upload lab report (DISHA 7-yr)  |
+| Billing & Ledger  | POST /billing/invoices | Create itemized invoice (INV)         |
+|                   | POST /payments         | Record payment transaction & receipt  |
+| Clinical AI       | POST /ai/soap-assist   | Dictation-to-SOAP structuring (HITL)  |
+|                   | POST /ai/drug-interaction-check | Drug-allergy safety screen   |
+|                   | POST /ai/audit-accept  | Record doctor approval in audit trail |
+| Notifications     | GET  /notifications    | Live alerts & DLT SMS log hub         |
+| Business BI       | GET  /analytics/overview | Executive KPIs & financial totals   |
+|                   | GET  /analytics/revenue | Collections by payment method & day   |
++-------------------+------------------------+---------------------------------------+
 ```
 
 ---
 
-## 🔒 Security & Data Privacy
+## 8. Automated Database Backup & Disaster Recovery
 
-Smart OPD treats healthcare data with extreme confidentiality:
-1. **Password Hashing**: Strong `bcrypt` salt rounds (12).
-2. **Session Security**: Stateless short-lived JWT access tokens (15m) coupled with rotating refresh tokens stored in `httpOnly`, `Secure`, `SameSite=Strict` cookies.
-3. **Data Protection**: Prepared for the Indian **Digital Personal Data Protection (DPDP) Act 2023**, with patient consent capture, right to summary download, and audit trails.
-4. **Tenant Boundary**: Every database query is bounded by `clinicId` to prevent cross-tenant data leakage.
+### Create a Point-in-Time Snapshot
+```bash
+node backend/scripts/backup.mjs
+```
+* Generates a timestamped JSON dump of all 16 collections in `backend/backups/backup-<timestamp>/`.
+* Computes cryptographic SHA-256 hashes for each collection and outputs `manifest.json`.
+
+### Reconstitute Database from Snapshot
+```bash
+# Restore latest backup
+node backend/scripts/restore.mjs
+
+# Or specify custom snapshot
+node backend/scripts/restore.mjs --dir=backend/backups/backup-2026-11-14T14-17-51-215Z
+```
+* Verifies SHA-256 checksums before touching database.
+* Performs atomic upserts to restore data without duplicates.
 
 ---
 
-## 📄 License
+## 9. Automated Testing & Verification
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+Every subsystem is covered by automated verification scripts:
 
-#   P a t i e n t _ M a n a g e m e n t _ O P D _ S y s t e m  
- 
+```bash
+# Run Phase 11 (Notifications & TRAI DLT):
+node backend/test_phase11.mjs       # 30 / 30 Passed (100%)
+
+# Run Phase 12 (Patient Portal & Token Tracker):
+node backend/test_phase12.mjs       # 20 / 20 Passed (100%)
+
+# Run Phase 13 (Analytics & Financial Aggregations):
+node backend/test_phase13.mjs       # 57 / 57 Passed (100%)
+
+# Run Phase 14 (Clinical AI Co-Pilot & Safety Gates):
+node backend/test_phase14.mjs       # 67 / 67 Passed (100%)
+
+# Run Phase 15 (Master Full-Lifecycle Regression):
+node backend/test_phase15_e2e.mjs   # 41 / 41 Passed (100%)
+```
+
+### Production Build Verification
+```bash
+# Backend TypeScript build
+npm --prefix backend run build       # 0 errors
+
+# Frontend Vite build
+npm --prefix frontend run build      # 0 errors (dist/ ready for CDN/Nginx)
+```
+
+---
+
+## 10. Regulatory Compliance & Medico-Legal Standards
+
+1. **Digital Personal Data Protection (DPDP) Act 2023**:
+   - Digital patient consent recorded during registration.
+   - PII de-identification layer sanitizes patient identifiers before clinical AI structuring.
+   - Public 4K TV Waiting Room display board masks patient names (`RAHUL M.`).
+2. **Clinical Establishments Act (CEA)**:
+   - Mandatory statutory clinic registration number (`REG-XXXXX`) embedded on all prescriptions and tax invoices.
+3. **DISHA (Digital Information Security in Healthcare Act)**:
+   - 7-year statutory retention index on all diagnostic reports and clinical encounter records.
+4. **TRAI Telecom Commercial Communications Customer Preference Regulations (TCCCPR)**:
+   - 6-character registered SMS header `SMROPD` strictly <= 160 GSM characters per template.
+5. **WHO Ethics & Governance of AI for Health**:
+   - Strictly non-autonomous advisory. Mandatory Human-in-the-Loop (HITL) doctor review with visual UI differentiation and audit logging.
+
+---
+
+## 11. Production Deployment Runbook
+
+### Option A: Standard Node.js & Process Manager (PM2)
+```bash
+# 1. Build frontend and backend
+npm --prefix backend run build
+npm --prefix frontend run build
+
+# 2. Start backend via PM2
+pm2 start backend/dist/index.js --name "smart-opd-api" -i max
+
+# 3. Serve frontend static build via Nginx or Caddy
+# Point root to F:/Patient_Management_OPD_System/frontend/dist
+```
+
+### Sample Nginx Configuration
+```nginx
+server {
+    listen 80;
+    server_name clinic.smartopd.in;
+
+    # Frontend Single Page App
+    location / {
+        root /var/www/smart-opd/frontend/dist;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Backend API Proxy
+    location /api/v1/ {
+        proxy_pass http://127.0.0.1:5000/api/v1/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # WebSocket Proxy
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:5000/socket.io/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_set_header Host $host;
+    }
+}
+```
+
+---
+
+## 12. License & Medico-Legal Disclaimer
+
+Distributed under the **MIT License**.
+
+> **Clinical Disclaimer:** Smart OPD is designed to facilitate clinical workflows and practice management. Clinical AI features are strictly non-autonomous cognitive assistants. The registered medical practitioner remains 100% legally and clinically responsible for all medical diagnoses, prescriptions, and treatments provided.
