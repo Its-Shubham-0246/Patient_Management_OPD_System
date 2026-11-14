@@ -3,8 +3,8 @@
 > **Document ID:** PROJECT_TRACKER.md  
 > **System Scope:** Outpatient Department (OPD) Management Platform for a Single Clinic  
 > **Current Stage:** Stage B – Application Implementation  
-> **Active Phase:** PHASE 9 – Medical Records  
-> **Last Updated:** 2026-11-12  
+> **Active Phase:** PHASE 10 – Billing  
+> **Last Updated:** 2026-11-14  
 > **Repository Structure:** `frontend/`, `backend/`, `docs/`, `README.md`, `PROJECT_TRACKER.md`, `.gitignore`  
 
 ---
@@ -16,7 +16,7 @@
 | **Product Name** | Smart OPD (Single Clinic Digital Healthcare Platform) | Configurable clinic branding, working hours & fees |
 | **Stage A Status** | **100% COMPLETE & AUDITED** | All 15 master documents approved and harmonized |
 | **Stage B Target** | **15 Implementation Phases** | Full working MERN application with zero mock dependency |
-| **Current Focus** | **Phase 9: Medical Records** | Prescription history, diagnostic report uploads, longitudinal visit timeline, follow-up history, DISHA/DPDP 7-year retention |
+| **Current Focus** | **Phase 10: Billing** | Consultation charges, itemized invoice generation (`INV-YYMM-XXXXX`), payment recording (Cash, Static UPI QR, Card), Admin PIN discount authorization, daily collection reports |
 | **Primary Tech Stack** | React 18, Vite, TypeScript, Tailwind CSS, Node.js 20/24, Express, MongoDB 8, Socket.IO | Production-grade single-clinic architecture |
 
 ---
@@ -33,9 +33,8 @@
 | **06** | **Appointment Scheduling** | **COMPLETED** | Doctor availability engine, discrete slot calculation, online booking, receptionist booking, follow-up booking, walk-in appointments, reschedule/cancel, double-booking prevention (ACID compound index & app validation). |
 | **07** | **OPD Queue** | **COMPLETED** | Check-in trigger, daily sequential token generation (Token #1, #2... per doctor), live Socket.IO queue, waiting/called/in-consultation/completed/skipped states, emergency priority promotion, dynamic wait time estimation, 4K TV display board with DPDP Act name masking (`RAHUL M.`) and dual-tone audio chime (D5->A5). |
 | **08** | **Doctor Consultation** | **COMPLETED** | Daily schedule roster, waiting patients list, patient longitudinal EMR, chief complaints, vitals with BMI auto-calc, diagnosis with ICD-10, treatment plan, digital prescription builder (`RX-YYMM-XXXXX`), official printable A4 prescription letterhead, digital signature block. |
-| **09** | **Medical Records** | **UP NEXT** | Prescription history (write-once immutable), medical reports vault, diagnostic uploads, visit timeline, follow-up history. |
-| **09** | **Medical Records** | PENDING | Prescription history (write-once immutable), medical reports vault, diagnostic uploads, visit timeline, follow-up history. |
-| **10** | **Billing** | PENDING | Consultation charges, itemized invoice generation, payment recording (Cash, Static UPI QR, Card), discounts with Admin PIN permission, daily collections report. |
+| **09** | **Medical Records** | **COMPLETED** | Prescription history, diagnostic report uploads with DISHA 7-year retention tracking, unified longitudinal patient timeline (`/records/patient/:id/timeline`), report soft-deletion, and follow-up scheduling. |
+| **10** | **Billing** | **IN PROGRESS** | Consultation charges, itemized invoice generation, payment recording (Cash, Static UPI QR, Card), discounts with Admin PIN permission, payment receipts, daily collection report. |
 | **11** | **Notifications** | PENDING | Appointment confirmations, reminders, cancellation alerts, follow-up alerts, email (Nodemailer) and SMS integration ready. |
 | **12** | **Patient Portal** | PENDING | Patient self-service login, appointment booking (auto-alloc or choice), live token status tracker, downloadable PDF prescriptions and receipts, medical records viewer. |
 | **13** | **Analytics** | PENDING | Recharts executive dashboards: daily patient footfall, new vs returning ratio, doctor-wise volume, average wait time, revenue trends, cancellation statistics. |
@@ -302,22 +301,67 @@
   - Doctor today prescriptions list verified.
 
 ### Phase 9 Task Checklist: Medical Records
-- [ ] Create Medical Report Model (`backend/src/models/MedicalReport.ts`):
-  - Linkages: clinicId, patientId, doctorId, visitId.
-  - Category: LAB_REPORT, IMAGING, PREVIOUS_PRESCRIPTION, DISCHARGE_SUMMARY, OTHER.
-  - Document metadata: reportTitle, fileUrl, fileType, fileSizeBytes, testDate, labName, notes, uploaderId.
-  - DISHA / DPDP compliance fields: retentionExpiryDate (7 years), isArchived.
-- [ ] Build Medical Records Controller (`backend/src/controllers/medicalRecordController.ts`) & Routes:
-  - `GET /api/v1/records/patient/:patientId/timeline`: Unified longitudinal medical timeline aggregating all visits, consultations, prescriptions, and lab reports into one chronological feed.
-  - `GET /api/v1/records/patient/:patientId/reports`: Paginated list of uploaded diagnostic reports with category filter.
-  - `POST /api/v1/records/patient/:patientId/reports`: Upload/attach diagnostic report.
-  - `DELETE /api/v1/records/reports/:id`: Soft delete / archive report with audit trail.
-- [ ] Build Frontend Medical Records Service (`frontend/src/services/medicalRecordService.ts`).
-- [ ] Build Patient Medical Records & EMR Hub Page (`frontend/src/pages/patient/MedicalRecordsPage.tsx`):
-  - Unified longitudinal visit timeline with chronological encounter cards.
-  - Prescriptions archive with 1-click printable view.
-  - Diagnostic reports vault with category tabs, report preview, and upload dialog.
-  - Follow-up tracking timeline.
-- [ ] Mount routes in `frontend/src/App.tsx`:
-  - `/doctor/records`, `/reception/records`, `/portal/records`.
+- [x] Create Medical Report Model (`backend/src/models/MedicalReport.ts`):
+  - Linkages: clinicId, patientId, doctorId, visitId, uploadedBy.
+  - Categories: lab, radiology, pathology, cardiology, other.
+  - Document metadata: reportName, title, fileUrl, fileSizeBytes, mimeType, labName, referringDoctor, findings, isSharedWithPatient.
+  - Statutory compliance: DISHA / DPDP 7-year retention tracking (`retentionUntil`).
+  - Soft delete support: `isDeleted`, `deletedAt`.
+- [x] Create Follow-Up Model (`backend/src/models/FollowUp.ts`):
+  - Linkages: clinicId, patientId, doctorId, visitId, prescriptionId, createdBy.
+  - Due date, clinical reason, instructions, reminderSentAt, status (`scheduled`, `reminder_sent`, `completed`, `missed`, `cancelled`).
+- [x] Build Medical Records Controller (`backend/src/controllers/medicalRecordController.ts`) & Routes:
+  - `GET /api/v1/records/patient/:patientId/timeline`: Unified longitudinal medical timeline aggregating all visits, consultations, prescriptions, and lab reports into one chronological feed with vitals trends.
+  - `GET /api/v1/reports/patient/:patientId`: Paginated list of diagnostic reports with category filtering.
+  - `POST /api/v1/reports/patient/:patientId`: Upload & attach diagnostic report to patient vault.
+  - `GET /api/v1/reports/reports/:id`: Single report details.
+  - `DELETE /api/v1/reports/reports/:id`: Soft delete report with audit trail.
+  - `GET /api/v1/followups/followups`: Follow-up reviews list.
+  - `POST /api/v1/followups/followups`: Schedule follow-up consultation.
+  - `PUT /api/v1/followups/followups/:id/status`: Update follow-up status (e.g. `completed`).
+- [x] Build Frontend Medical Records Service (`frontend/src/services/medicalRecordService.ts`).
+- [x] Build Patient Medical Records & EMR Hub Page (`frontend/src/pages/patient/MedicalRecordsPage.tsx`):
+  - Unified longitudinal visit timeline with chronological encounter cards and prescription view/print.
+  - Diagnostic reports vault with category chips, report preview, and upload dialog.
+  - Follow-up tracking timeline with "+ Schedule Follow-Up" and "Mark Done" buttons.
+  - Prominent red critical drug allergy banner.
+- [x] Mount routes in `frontend/src/App.tsx`:
+  - `/doctor/records`, `/doctor/records/:id`, `/reception/records`, `/reception/records/:id`, `/portal/records`, `/portal/prescriptions`, `/portal/reports`.
+- [x] Update `Sidebar.tsx` navigation links for Doctor, Receptionist, and Patient.
+- [x] Verify backend build (`npm run build --prefix backend` -> 0 errors).
+- [x] Verify frontend build (`npm run build --prefix frontend` -> 0 errors in 26.96s).
+- [x] Execute automated end-to-end integration test (`node backend/test_phase9.mjs`):
+  - Uploaded CBC and Chest X-Ray reports.
+  - Verified reports listing and category filtering.
+  - Scheduled and updated follow-up consultation.
+  - Verified unified longitudinal patient timeline containing all 4 event types (`ENCOUNTER`, `PRESCRIPTION`, `DIAGNOSTIC_REPORT`, `FOLLOW_UP`).
+  - Verified soft delete of diagnostic report.
+
+### Phase 10 Task Checklist: Billing
+- [ ] Create Invoice & Payment Models:
+  - `backend/src/models/Invoice.ts`:
+    - Linkages: clinicId, patientId, doctorId, visitId, appointmentId.
+    - Sequential monthly invoice number: `INV-YYMM-XXXXX`.
+    - Line items: itemType (CONSULTATION, PROCEDURE, LAB_TEST, PHARMACY, REGISTRATION, OTHER), description, unitPrice, quantity, amount.
+    - Financials: subtotal, discountAmount, discountPercentage, discountReason, discountApprovedBy (Admin PIN auth), taxAmount, totalAmount, paidAmount, balanceAmount.
+    - Status: DRAFT, PENDING, PAID, PARTIALLY_PAID, VOID, REFUNDED.
+  - `backend/src/models/Payment.ts`:
+    - Linkages: clinicId, invoiceId, patientId, collectedBy.
+    - Sequential receipt number: `RCPT-YYMM-XXXXX`.
+    - Method: CASH, UPI_STATIC_QR, CARD, NET_BANKING, OTHER.
+    - Payment details: amount, transactionReference, notes, receivedAt.
+- [ ] Build Billing & Settlement Controller (`backend/src/controllers/billingController.ts`) & Routes:
+  - `POST /api/v1/invoices`: Generate itemized invoice from completed visit/consultation.
+  - `GET /api/v1/invoices`: Paginated invoice list with patient, doctor, status, date filters.
+  - `GET /api/v1/invoices/:id`: Detailed invoice view with line items and payments.
+  - `POST /api/v1/invoices/:id/payments`: Record payment (Cash, Static UPI QR, Card) with automatic balance recalculation and receipt generation.
+  - `POST /api/v1/invoices/:id/discount`: Apply discount requiring Admin PIN authorization.
+  - `GET /api/v1/billing/daily-report`: Daily collections report broken down by payment mode (Cash vs UPI vs Card) and cashier.
+- [ ] Build Frontend Billing Service (`frontend/src/services/billingService.ts`).
+- [ ] Build Front-Desk Cashier & Settlement Page (`frontend/src/pages/billing/BillingLedgerPage.tsx`):
+  - Daily collection summary cards (Total Invoiced, Cash Collected, UPI Collected, Card Collected, Outstanding Balance).
+  - Unpaid / Pending invoices queue with 1-click "Settle Bill" action.
+  - Settlement Modal with Static UPI QR display, Cash change calculator, and Admin PIN discount unlock.
+  - Printable official GST / Clinical Establishments Act tax invoice and thermal receipt.
+- [ ] Mount routes in `frontend/src/App.tsx` and `Sidebar.tsx`.
 - [ ] Verify TypeScript builds and run integration test against live backend & MongoDB.
