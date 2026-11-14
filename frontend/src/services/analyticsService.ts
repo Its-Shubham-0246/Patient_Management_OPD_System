@@ -104,3 +104,4 @@ export const analyticsService = {
     return res.data.data;
   }
 };
+

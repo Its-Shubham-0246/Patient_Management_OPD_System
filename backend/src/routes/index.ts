@@ -13,6 +13,7 @@ import billingRoutes from './billingRoutes.js';
 import paymentRoutes from './paymentRoutes.js';
 import analyticsRoutes from './analyticsRoutes.js';
 import notificationRoutes from './notificationRoutes.js';
+import aiRoutes from './aiRoutes.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 
 const router = Router();
@@ -35,6 +36,7 @@ router.use('/billing', billingRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/ai', aiRoutes);
 
 // Root API v1 info
 router.get('/', (req, res) => {

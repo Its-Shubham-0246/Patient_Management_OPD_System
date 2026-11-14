@@ -19,6 +19,7 @@ export interface QueueEntryData {
     age?: number;
     bloodGroup?: string;
     allergies?: string[];
+    chronicConditions?: string[];
   };
   doctorId: {
     _id: string;

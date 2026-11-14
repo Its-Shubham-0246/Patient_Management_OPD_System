@@ -20,8 +20,14 @@ import {
   History,
   Check,
   X,
-  Volume2
+  Volume2,
+  Sparkles,
+  Bot,
+  ShieldCheck,
+  ShieldAlert
 } from 'lucide-react';
+import { AiClinicalCopilotModal } from '../../components/doctor/AiClinicalCopilotModal';
+import { aiService, SoapDraftResponse, DrugSafetyAlert } from '../../services/aiService';
 import { useAuth } from '../../context/AuthContext';
 import { getDoctorQueue, callNextToken, startConsultation, QueueEntryData } from '../../services/queueService';
 import {
@@ -126,6 +132,11 @@ export const DoctorWorkspacePage: React.FC = () => {
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [printableRx, setPrintableRx] = useState<PrescriptionData | null>(null);
+
+  // AI Co-Pilot State
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [aiSafetyAlerts, setAiSafetyAlerts] = useState<DrugSafetyAlert[]>([]);
+  const [aiDraftApplied, setAiDraftApplied] = useState(false);
 
   // 1. Initial Load: Doctors list & Formulary Catalog
   useEffect(() => {
@@ -285,6 +296,72 @@ export const DoctorWorkspacePage: React.FC = () => {
       fetchQueue();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to start consultation');
+    }
+  };
+
+  // AI Safety Pharmacovigilance Screen
+  useEffect(() => {
+    if (selectedEntry?.patientId && medicines.length > 0) {
+      aiService
+        .checkDrugInteractions({
+          medications: medicines.map((m) => ({ name: m.name, dosage: m.dosage, frequency: m.frequency })),
+          allergies: selectedEntry.patientId.allergies,
+          chronicConditions: selectedEntry.patientId.chronicConditions,
+          patientId: selectedEntry.patientId._id
+        })
+        .then((res) => {
+          setAiSafetyAlerts(res.alerts || []);
+        })
+        .catch((e) => console.error('AI Drug Safety Check Error:', e));
+    } else {
+      setAiSafetyAlerts([]);
+    }
+  }, [medicines, selectedEntry]);
+
+  // Apply Structured AI SOAP Draft to Consultation Form
+  const handleApplyAiSoapDraft = (draft: SoapDraftResponse) => {
+    setAiDraftApplied(true);
+
+    // 1. Subjective: Chief complaints
+    if (draft.subjective?.chiefComplaints?.length) {
+      setChiefComplaints((prev) => Array.from(new Set([...prev, ...draft.subjective.chiefComplaints])));
+    }
+
+    // 2. Objective & Observations
+    const obsParts: string[] = [];
+    if (draft.subjective?.historyOfPresentIllness) {
+      obsParts.push(`[HPI]: ${draft.subjective.historyOfPresentIllness}`);
+    }
+    if (draft.objective?.physicalExamination) {
+      obsParts.push(`[Physical Exam]: ${draft.objective.physicalExamination}`);
+    }
+    if (obsParts.length > 0) {
+      setClinicalObservations((prev) => (prev ? `${prev}\n\n${obsParts.join('\n')}` : obsParts.join('\n')));
+    }
+
+    // 3. Assessment: Primary Diagnosis & Differential ICD-10 Hints
+    if (draft.assessment?.primaryImpression) {
+      setDiagnosisList((prev) => Array.from(new Set([...prev, draft.assessment.primaryImpression])));
+    }
+    if (draft.assessment?.differentialDiagnosisSuggestions?.length) {
+      const newIcd = draft.assessment.differentialDiagnosisSuggestions.map((d) => ({
+        code: d.icd10Hint,
+        description: d.condition
+      }));
+      setSelectedIcd10((prev) => {
+        const existingCodes = new Set(prev.map((i) => i.code));
+        const filtered = newIcd.filter((i) => !existingCodes.has(i.code));
+        return [...prev, ...filtered];
+      });
+    }
+
+    // 4. Plan: Lab tests & Non-pharmacological Advice
+    if (draft.plan?.suggestedInvestigations?.length) {
+      setLabTests((prev) => Array.from(new Set([...prev, ...draft.plan.suggestedInvestigations])));
+    }
+    if (draft.plan?.nonPharmacologicalAdvice?.length) {
+      const adviceText = draft.plan.nonPharmacologicalAdvice.join('. ');
+      setAdvice((prev) => (prev ? `${prev}\n${adviceText}` : adviceText));
     }
   };
 
@@ -619,6 +696,15 @@ export const DoctorWorkspacePage: React.FC = () => {
                         Start In-Consultation
                       </Button>
                     )}
+                    <Button
+                      size="sm"
+                      onClick={() => setIsCopilotOpen(true)}
+                      className="flex items-center space-x-1.5 bg-linear-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-xs"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                      <span>AI Co-Pilot</span>
+                    </Button>
+
                     <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 bg-gray-50 dark:bg-gray-800">
                       <button
                         onClick={() => setActiveTab('consultation')}
@@ -657,6 +743,24 @@ export const DoctorWorkspacePage: React.FC = () => {
                         {selectedEntry.patientId.allergies.join(', ')}
                       </span>
                     </div>
+                  </div>
+                )}
+
+                {/* AI Draft Applied HITL Banner */}
+                {aiDraftApplied && (
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-2.5 flex items-center justify-between text-xs text-indigo-900">
+                    <div className="flex items-center space-x-2">
+                      <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
+                      <span>
+                        <strong>AI Clinical Draft Active:</strong> Please review, modify or verify all auto-populated fields before finalizing.
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setAiDraftApplied(false)}
+                      className="text-xs text-indigo-600 hover:text-indigo-900 font-semibold"
+                    >
+                      Dismiss
+                    </button>
                   </div>
                 )}
 
@@ -893,6 +997,31 @@ export const DoctorWorkspacePage: React.FC = () => {
                       </Button>
                     </CardHeader>
                     <CardContent className="p-3 space-y-3">
+                      {/* AI Pharmacovigilance & Drug Allergy Conflict Warning Banner */}
+                      {aiSafetyAlerts.length > 0 && (
+                        <div className="p-3 bg-red-50 border border-red-300 rounded-lg space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-red-900 flex items-center gap-1.5">
+                              <ShieldAlert className="w-4 h-4 text-red-600" />
+                              Pharmacovigilance Alert: {aiSafetyAlerts.length} Medication Conflict(s)
+                            </span>
+                            <Badge variant="danger" className="text-[10px]">
+                              {aiSafetyAlerts[0].severity}
+                            </Badge>
+                          </div>
+                          <div className="space-y-1.5">
+                            {aiSafetyAlerts.map((alert, idx) => (
+                              <div key={idx} className="text-xs text-red-800 bg-white/70 p-2 rounded border border-red-200">
+                                <span className="font-bold">{alert.drug}</span> vs <span className="font-semibold">{alert.trigger}</span>: {alert.description}
+                                <span className="block text-[11px] text-emerald-800 font-medium mt-0.5">
+                                  Recommendation: {alert.recommendation}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Common Medication Presets */}
                       <div>
                         <span className="text-[10px] text-gray-500 font-medium block mb-1">
@@ -1414,6 +1543,16 @@ export const DoctorWorkspacePage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* AI Clinical Co-Pilot Drawer / Modal */}
+      <AiClinicalCopilotModal
+        isOpen={isCopilotOpen}
+        onClose={() => setIsCopilotOpen(false)}
+        patient={selectedEntry?.patientId}
+        vitals={vitals}
+        currentMedicines={medicines}
+        onApplySoapDraft={handleApplyAiSoapDraft}
+      />
     </div>
   );
 };
