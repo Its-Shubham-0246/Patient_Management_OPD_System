@@ -3,7 +3,7 @@
 > **Document ID:** PROJECT_TRACKER.md  
 > **System Scope:** Outpatient Department (OPD) Management Platform for a Single Clinic  
 > **Current Stage:** Stage B – Application Implementation  
-> **Active Phase:** PHASE 12 – Patient Portal  
+> **Active Phase:** PHASE 13 – Analytics  
 > **Last Updated:** 2026-11-14  
 > **Repository Structure:** `frontend/`, `backend/`, `docs/`, `README.md`, `PROJECT_TRACKER.md`, `.gitignore`  
 
@@ -16,7 +16,7 @@
 | **Product Name** | Smart OPD (Single Clinic Digital Healthcare Platform) | Configurable clinic branding, working hours & fees |
 | **Stage A Status** | **100% COMPLETE & AUDITED** | All 15 master documents approved and harmonized |
 | **Stage B Target** | **15 Implementation Phases** | Full working MERN application with zero mock dependency |
-| **Current Focus** | **Phase 12: Patient Portal** | Patient self-service registration, appointment booking wizard, live token tracker, downloadable digital prescriptions and payment receipts |
+| **Current Focus** | **Phase 13: Analytics** | Recharts executive dashboards: daily patient footfall, new vs returning ratio, doctor-wise volume, average wait time, revenue trends, cancellation statistics |
 | **Primary Tech Stack** | React 18, Vite, TypeScript, Tailwind CSS, Node.js 20/24, Express, MongoDB 8, Socket.IO | Production-grade single-clinic architecture |
 
 ---
@@ -36,8 +36,8 @@
 | **09** | **Medical Records** | **COMPLETED** | Prescription history, diagnostic report uploads with DISHA 7-year retention tracking, unified longitudinal patient timeline (`/records/patient/:id/timeline`), report soft-deletion, and follow-up scheduling. |
 | **10** | **Billing** | **COMPLETED** | Itemized invoice generation (`INV-YYMM-XXXXX`), partial/full payment recording (Cash, Static UPI QR, Card), sequential receipts (`RCPT-YYMM-XXXXX`), Admin PIN discount authorization guard (HTTP 403 on invalid PIN), daily collection report, printable GST/CEA tax invoice and thermal slip. |
 | **11** | **Notifications** | **COMPLETED** | Multi-channel notification engine (In-App, Nodemailer SMTP Email, TRAI DLT Compliant SMS), 7 pre-registered DLT templates (Header: `SMROPD`), DPDP Act 2023 legal footers, live header bell with unread popover dropdown, interactive Notification Center and DLT telecommunications sandbox. Verified via 30/30 automated checkpoints. |
-| **12** | **Patient Portal** | **IN PROGRESS** | Patient self-service login, appointment booking (auto-alloc or choice), live token status tracker, downloadable PDF prescriptions and receipts, medical records viewer. |
-| **13** | **Analytics** | PENDING | Recharts executive dashboards: daily patient footfall, new vs returning ratio, doctor-wise volume, average wait time, revenue trends, cancellation statistics. |
+| **12** | **Patient Portal** | **COMPLETED** | Complete patient self-service portal, live today's token card with queue position and wait time, dedicated mobile-first `LiveTokenTrackerPage` with Web Audio chime, appointment booking & cancellation with reason audit, tabbed clinical hub (prescriptions, diagnostic vault, invoices), and profile editor modal. Verified via 20/20 automated checkpoints. |
+| **13** | **Analytics** | **IN PROGRESS** | Recharts executive dashboards: daily patient footfall, new vs returning ratio, doctor-wise volume, average wait time, revenue trends, cancellation statistics. |
 | **14** | **Advanced Features** | PENDING | Non-autonomous AI clinical co-pilot (EMR summarization, dictation structuring, preliminary intake tags), mandatory Human-in-the-Loop review, smart operational recommendations. |
 | **15** | **Quality and Deployment** | PENDING | Full test suites (Unit, Integration, E2E), security testing, RBAC testing, error handling, backup scripts, production deployment configuration, final report. |
 
@@ -439,19 +439,53 @@
 ---
 
 ### Phase 12 Task Checklist: Patient Portal
-- [ ] Build Patient Portal Dashboard (`frontend/src/pages/PatientPortal.tsx`):
-  - Welcome banner with patient UHID, age, gender, blood group, allergies alert banner.
-  - Today's appointment and active token card with live queue position indicator.
-  - Quick action shortcuts: "Book New Consultation", "View Live Queue Token", "My Prescriptions", "Lab Reports", "Invoices & Receipts".
-- [ ] Build Patient Live Token Tracker (`frontend/src/pages/patient/LiveTokenTrackerPage.tsx`):
-  - Real-time token status (WAITING, CALLED, IN_CONSULTATION, COMPLETED).
-  - Estimated wait time countdown in minutes.
-  - Room number and doctor name display.
-- [ ] Enhance Patient Prescriptions Viewer with direct PDF download:
-  - List of finalized prescriptions with date, doctor, chief diagnosis.
-  - Printable official prescription letterhead.
-- [ ] Enhance Patient Billing & Receipts Viewer:
-  - Invoices and payment receipts list with total paid, balance, status.
-  - Printable official money receipt slip.
-- [ ] Mount routes in `frontend/src/App.tsx` and verify role permissions for PATIENT and ADMIN.
-- [ ] Run automated end-to-end integration test (`backend/test_phase12.mjs`) and verify builds.
+- [x] Build Dynamic Patient Portal Dashboard (`frontend/src/pages/PatientPortal.tsx`):
+  - 100% dynamic MongoDB live backend integration (zero mock data).
+  - Welcome banner with patient UHID, age, gender, blood group, contact info, and DPDP digital consent badge.
+  - Critical medical allergy warning banner (highlighting documented drug/substance allergies).
+  - Staff preview mode switcher (allowing Admin/Doctor/Receptionist to preview any patient's portal view).
+  - Active today's encounter card with live queue position, estimated wait time, attending physician, and room number.
+  - Consultations & appointments list with 1-click "Cancel Appointment" (with reason prompt) and "Book Consultation".
+  - Interactive Tabbed Clinical & Financial Hub:
+    - Tab 1: Digital Prescriptions (`RX-YYMM-XXXXX`) with printable official A4 letterhead prescription modal.
+    - Tab 2: Lab & Diagnostic Reports vault with external document upload modal (`POST /api/v1/records/patient/:id/reports`).
+    - Tab 3: Payment Invoices & Receipts with printable tax invoice slip.
+- [x] Build Mobile-First Live Token Tracker (`frontend/src/pages/patient/LiveTokenTrackerPage.tsx`):
+  - Accessible via `/portal/token`.
+  - Huge glowing token number display, status indicator (`WAITING`, `CALLED`, `IN_CONSULTATION`, `COMPLETED`).
+  - Doctor name, qualification, and big consultation room badge (`Room #102`).
+  - Real-time queue position countdown and estimated wait minutes.
+  - Web Audio API dual-tone chime synthesizer (D5 -> A5 frequency slide) when token is called.
+  - Patient guidance ("While you wait" tips).
+- [x] Build Patient Profile Editor Modal (`frontend/src/components/patient/PatientProfileModal.tsx`):
+  - Patient contact details (mobile, email).
+  - Emergency contact (name, relation, phone).
+  - Residential address (line 1, city, state, pincode).
+  - Updates live MongoDB patient document (`PUT /api/v1/patients/:id`).
+- [x] Mount routes in `frontend/src/App.tsx` and configure role permissions for PATIENT, ADMIN, DOCTOR, RECEPTIONIST.
+- [x] Verify backend build (`npm run build --prefix backend` -> 0 errors).
+- [x] Verify frontend build (`npm run build --prefix frontend` -> 0 errors in 6.99s).
+- [x] Execute automated end-to-end integration test (`node backend/test_phase12.mjs`):
+  - 20 / 20 checkpoints passed with exit code 0.
+
+---
+
+### Phase 13 Task Checklist: Analytics & Business Intelligence
+- [ ] Implement Analytics Aggregations & Controller (`backend/src/controllers/analyticsController.ts`):
+  - Daily patient footfall & trend over time (date range filtering).
+  - New vs returning patient ratio.
+  - Doctor-wise consultation volume & workload index.
+  - Average patient waiting time & consultation duration.
+  - Revenue trends broken down by payment mode (Cash, UPI, Card).
+  - Appointment cancellation and no-show rates.
+- [ ] Mount Analytics routes in `backend/src/routes/analyticsRoutes.ts`:
+  - `GET /api/v1/analytics/dashboard`
+  - `GET /api/v1/analytics/revenue`
+  - `GET /api/v1/analytics/doctors`
+  - `GET /api/v1/analytics/wait-times`
+- [ ] Build Frontend Analytics Service (`frontend/src/services/analyticsService.ts`).
+- [ ] Build Executive Business Analytics Dashboard (`frontend/src/pages/admin/AnalyticsDashboardPage.tsx`):
+  - Date range selector (Today, 7 Days, 30 Days, Custom Range).
+  - Recharts visual graphs (AreaChart for footfall trends, BarChart for doctor volumes, PieChart for payment methods, BarChart for wait times).
+  - Export report to CSV / printable summary.
+- [ ] Verify TypeScript builds and run automated verification tests (`backend/test_phase13.mjs`).

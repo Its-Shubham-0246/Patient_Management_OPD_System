@@ -117,3 +117,19 @@ export const markEmergency = async (entryId: string): Promise<QueueEntryData> =>
   return res.data.data;
 };
 
+export interface PatientActiveQueueResponse {
+  active: boolean;
+  message?: string;
+  entry?: QueueEntryData;
+  patientsAhead?: number;
+  estimatedWaitMinutes?: number;
+  currentServingToken?: number | null;
+  currentServingStatus?: string | null;
+  currentServingCalledAt?: string | null;
+}
+
+export const getPatientActiveQueue = async (patientId: string): Promise<PatientActiveQueueResponse> => {
+  const res = await apiClient.get(`/queue/patient/${patientId}`);
+  return res.data.data;
+};
+

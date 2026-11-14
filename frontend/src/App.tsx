@@ -21,6 +21,7 @@ import { AppointmentSchedulingPage } from './pages/appointments/AppointmentSched
 import { BookAppointmentPage } from './pages/patient/BookAppointmentPage';
 import { LiveQueuePage } from './pages/queue/LiveQueuePage';
 import { PatientPortal } from './pages/PatientPortal';
+import { LiveTokenTrackerPage } from './pages/patient/LiveTokenTrackerPage';
 import { WaitingRoomDisplay } from './pages/WaitingRoomDisplay';
 import { NotificationCenterPage } from './pages/notifications/NotificationCenterPage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -283,6 +284,14 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute allowedRoles={['PATIENT', 'ADMIN']}>
                   <BookAppointmentPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/portal/token"
+              element={
+                <ProtectedRoute allowedRoles={['PATIENT', 'ADMIN', 'DOCTOR', 'RECEPTIONIST']}>
+                  <LiveTokenTrackerPage />
                 </ProtectedRoute>
               }
             />

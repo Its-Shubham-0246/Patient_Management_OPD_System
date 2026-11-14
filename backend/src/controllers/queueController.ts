@@ -139,6 +139,71 @@ export const getDisplayQueue = async (req: Request, res: Response, next: NextFun
   }
 };
 
+// Patient Live Token Lookup: Get active queue entry for a patient today
+export const getPatientActiveQueue = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { patientId } = req.params;
+    const { start, end } = getTodayRange();
+    const clinic = await getOrCreateClinic();
+
+    const entry = await QueueEntry.findOne({
+      clinicId: clinic._id,
+      patientId,
+      queueDate: { $gte: start, $lte: end },
+      status: { $in: ['WAITING', 'CALLED', 'IN_CONSULTATION', 'COMPLETED'] }
+    })
+      .populate('patientId', 'fullName uhid phone gender age bloodGroup')
+      .populate('doctorId', 'fullName specialization roomNumber department averageConsultationMinutes')
+      .populate('visitId', 'checkInTime consultationStartTime consultationEndTime visitType status')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (!entry) {
+      return sendSuccess(res, { active: false, message: 'No active visit or token today' });
+    }
+
+    // Compute patients ahead if still waiting
+    let patientsAhead = 0;
+    if (entry.status === 'WAITING') {
+      patientsAhead = await QueueEntry.countDocuments({
+        clinicId: clinic._id,
+        doctorId: (entry.doctorId as any)?._id,
+        queueDate: { $gte: start, $lte: end },
+        status: 'WAITING',
+        $or: [
+          { priorityOrder: { $lt: entry.priorityOrder } },
+          { priorityOrder: entry.priorityOrder, tokenNumber: { $lt: entry.tokenNumber } }
+        ]
+      });
+    }
+
+    const avgMinutes = (entry.doctorId as any)?.averageConsultationMinutes || 15;
+    const estimatedWaitMinutes = entry.status === 'WAITING' ? patientsAhead * avgMinutes : 0;
+
+    // Look for currently serving token for this doctor
+    const currentServing = await QueueEntry.findOne({
+      clinicId: clinic._id,
+      doctorId: (entry.doctorId as any)?._id,
+      queueDate: { $gte: start, $lte: end },
+      status: { $in: ['CALLED', 'IN_CONSULTATION'] }
+    })
+      .select('tokenNumber status calledAt')
+      .lean();
+
+    return sendSuccess(res, {
+      active: true,
+      entry,
+      patientsAhead,
+      estimatedWaitMinutes,
+      currentServingToken: currentServing?.tokenNumber || null,
+      currentServingStatus: currentServing?.status || null,
+      currentServingCalledAt: currentServing?.calledAt || null
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Physical Ingress: Check in patient
 export const checkInPatient = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {

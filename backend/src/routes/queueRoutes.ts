@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getDoctorQueue,
   getDisplayQueue,
+  getPatientActiveQueue,
   checkInPatient,
   callNextToken,
   startConsultation,
@@ -18,6 +19,7 @@ const router = Router();
 router.get('/display', getDisplayQueue);
 
 // Protected Queue Operations
+router.get('/patient/:patientId', authenticate, getPatientActiveQueue);
 router.get('/doctor/:doctorId', authenticate, getDoctorQueue);
 router.get('/:doctorId', authenticate, getDoctorQueue);
 router.post('/checkin', authenticate, restrictTo('RECEPTIONIST', 'DOCTOR', 'ADMIN'), checkInPatient);
